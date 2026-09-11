@@ -1,5 +1,6 @@
 using System.Text;
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Microsoft.Extensions.Options;
 using Host.Security.BodyParsers;
 using Host.Security.Options;
@@ -16,8 +17,16 @@ namespace Host.Security.LocationExtractors;
 /// affecting downstream middleware or request handlers.
 /// </para>
 /// <para>
-/// The body is read only when a compatible parser is registered and the
-/// request size does not exceed the configured buffer threshold.
+/// <see cref="ApiKeyCredentialExtractorOptions.BufferThreshold"/> controls how much of the
+/// body is buffered in memory before spilling to a temporary file. It is not a size limit:
+/// bodies larger than the threshold continue to be read.
+/// </para>
+/// <para>
+/// <see cref="ApiKeyCredentialExtractorOptions.MaxBodySize"/> is the optional hard limit on
+/// how much of the request body is read for credential extraction. When set, bodies larger
+/// than the limit are rejected instead of being read in full. Requests without a known
+/// <c>Content-Length</c> are read through the same bounded path when <see cref="ApiKeyCredentialExtractorOptions.MaxBodySize"/>
+/// is configured.
 /// </para>
 /// </remarks>
 public sealed class BodyApiKeyLocationExtractor(
@@ -61,12 +70,14 @@ public sealed class BodyApiKeyLocationExtractor(
         }
 
         if (context.Request.ContentLength is { } length
-            && length > Options.BufferThreshold)
+            && Options.MaxBodySize > 0
+            && length > Options.MaxBodySize)
         {
-            logger.LogWarning("Skipping Body credential extraction for scheme {Scheme}: body of {Length} bytes exceeds configured buffer threshold of {Threshold} bytes",
+            logger.LogWarning(
+                "Skipping Body credential extraction for scheme {Scheme}: body of {Length} bytes exceeds configured MaxBodySize of {MaxBodySize} bytes",
                 scheme.Name,
                 length,
-                Options.BufferThreshold);
+                Options.MaxBodySize);
 
             return null;
         }
@@ -80,19 +91,38 @@ public sealed class BodyApiKeyLocationExtractor(
         {
             context.Request.Body.Position = 0;
 
-            using var reader = new StreamReader(
-                context.Request.Body,
-                Encoding.UTF8,
-                detectEncodingFromByteOrderMarks: true,
-                leaveOpen: true);
+            string? body;
 
-            var body = await reader.ReadToEndAsync();
+            if (Options.MaxBodySize > 0)
+            {
+                body = await ReadBoundedBodyAsync(context.Request.Body, Options.MaxBodySize);
+            }
+            else
+            {
+                using var reader = new StreamReader(
+                    context.Request.Body,
+                    Encoding.UTF8,
+                    detectEncodingFromByteOrderMarks: true,
+                    leaveOpen: true);
+
+                body = await reader.ReadToEndAsync();
+            }
+
+            if (body is null)
+            {
+                logger.LogWarning(
+                    "Skipping Body credential extraction for scheme {Scheme}: body exceeds configured MaxBodySize of {MaxBodySize} bytes",
+                    scheme.Name,
+                    Options.MaxBodySize);
+
+                return null;
+            }
 
             if (string.IsNullOrWhiteSpace(body))
                 return null;
 
             var fieldName = ResolveName(
-                scheme.Name,
+                scheme.CredentialName,
                 Options.DefaultQueryName);
 
             return parser.Parse(body, fieldName);
@@ -101,5 +131,38 @@ public sealed class BodyApiKeyLocationExtractor(
         {
             context.Request.Body.Position = originalPosition;
         }
+    }
+
+    /// <summary>
+    /// Reads up to <paramref name="maxBytes"/> bytes from the body and decodes them as UTF-8.
+    /// Returns null when the body is larger than the limit.
+    /// </summary>
+    private static async Task<string?> ReadBoundedBodyAsync(Stream body, long maxBytes)
+    {
+        var buffer = new byte[4096];
+
+        using var ms = new MemoryStream();
+
+        long total = 0;
+        int read;
+        while ((read = await body.ReadAsync(buffer.AsMemory(0, buffer.Length))) > 0)
+        {
+            total += read;
+
+            if (total > maxBytes)
+                return null;
+
+            ms.Write(buffer, 0, read);
+        }
+
+        ms.Position = 0;
+
+        using var reader = new StreamReader(
+            ms,
+            Encoding.UTF8,
+            detectEncodingFromByteOrderMarks: true,
+            leaveOpen: false);
+
+        return await reader.ReadToEndAsync();
     }
 }

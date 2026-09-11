@@ -1,4 +1,5 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Microsoft.Extensions.Options;
 
 using Host.Security.Options;
@@ -40,19 +41,19 @@ public sealed class GrpcMetadataApiKeyLocationExtractor(
         HttpContext context,
         AuthKitSecuritySchemeDescriptor scheme)
     {
-        var headerName = string.IsNullOrWhiteSpace(scheme.Name)
+        var credentialName = string.IsNullOrWhiteSpace(scheme.CredentialName)
             ? Options.DefaultHeaderName.ToLowerInvariant()
-            : scheme.Name.ToLowerInvariant();
+            : scheme.CredentialName.ToLowerInvariant();
 
-        if(headerName == Options.DefaultHeaderName.ToLowerInvariant())
+        if (credentialName == Options.DefaultHeaderName.ToLowerInvariant())
         {
             logger.LogDebug(
                 "Reading gRPC metadata for scheme {Scheme} as HTTP header '{HeaderName}'",
                 scheme.Name,
-                headerName);
+                credentialName);
         }
 
-        if(context.Request.Headers.TryGetValue(headerName, out var header))
+        if (context.Request.Headers.TryGetValue(credentialName, out var header))
         {
             return Task.FromResult<string?>(
                 ApiKeyValueNormalizer.Normalize(header.ToString()));

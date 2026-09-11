@@ -1,4 +1,6 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
+using Host.Security.Options;
 using Microsoft.OpenApi;
 
 namespace Host.Configuration;
@@ -61,7 +63,7 @@ public static class AuthKitOpenApiSecuritySchemeMapper
 
         var scheme = new OpenApiSecurityScheme
         {
-            Name = descriptor.Name,
+            Name = ResolveCredentialName(descriptor),
             BearerFormat = descriptor.BearerFormat,
             Description = descriptor.Description
         };
@@ -162,5 +164,20 @@ public static class AuthKitOpenApiSecuritySchemeMapper
             OpenApiSpecVersion.OpenApi3_0 => "3.0",
             OpenApiSpecVersion.OpenApi3_1 => "3.1",
             _ => specVersion.ToString()
+        };
+
+    /// <summary>
+    /// Resolves the credential field name for the OpenAPI <c>name</c> property
+    /// from the descriptor's explicit <see cref="AuthKitSecuritySchemeDescriptor.CredentialName"/>
+    /// or the host's location-specific default.
+    /// </summary>
+    private static string ResolveCredentialName(AuthKitSecuritySchemeDescriptor descriptor) =>
+        descriptor.CredentialName
+        ?? descriptor.In switch
+        {
+            AuthKitApiKeyLocation.Header => ApiKeyCredentialExtractorOptions.DefaultHeaderNameValue,
+            AuthKitApiKeyLocation.Query  => ApiKeyCredentialExtractorOptions.DefaultQueryNameValue,
+            AuthKitApiKeyLocation.Cookie => ApiKeyCredentialExtractorOptions.DefaultCookieNameValue,
+            _ => descriptor.Name
         };
 }

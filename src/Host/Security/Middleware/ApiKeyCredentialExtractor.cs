@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Security.LocationExtractors;
 using Host.Security.Validation;
 

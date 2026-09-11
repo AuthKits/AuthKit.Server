@@ -1,4 +1,5 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
 namespace Host.Security.LocationExtractors;
 

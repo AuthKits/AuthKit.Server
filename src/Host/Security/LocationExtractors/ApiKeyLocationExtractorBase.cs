@@ -1,4 +1,5 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Microsoft.Extensions.Options;
 
 using Host.Security.Options;
@@ -53,11 +54,11 @@ public abstract class ApiKeyLocationExtractorBase : IApiKeyLocationExtractor
     /// <summary>
     /// Resolves the credential name using the configured or provided default.
     /// </summary>
-    /// <param name="schemeName">The credential name declared by the scheme.</param>
+    /// <param name="credentialName">The credential field name declared by the scheme.</param>
     /// <param name="defaultValue">The default name used when the scheme is empty.</param>
     /// <returns>The resolved credential name.</returns>
-    protected static string ResolveName(string? schemeName, string defaultValue) =>
-        string.IsNullOrWhiteSpace(schemeName)
+    protected static string ResolveName(string? credentialName, string defaultValue) =>
+        string.IsNullOrWhiteSpace(credentialName)
             ? defaultValue
-            : schemeName;
+            : credentialName;
 }

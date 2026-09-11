@@ -1,4 +1,5 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Microsoft.Extensions.Options;
 
 using Host.Security.Options;
@@ -9,9 +10,10 @@ namespace Host.Security.LocationExtractors;
 /// Extracts an API key from an HTTP request query parameter.
 /// </summary>
 /// <remarks>
-/// The query parameter name is resolved from the security scheme and falls back
+/// The query parameter name is resolved from the scheme's
+/// <see cref="AuthKitSecuritySchemeDescriptor.CredentialName"/> and falls back
 /// to <see cref="ApiKeyCredentialExtractorOptions.DefaultQueryName"/> when no
-/// explicit name is provided.
+/// explicit credential name is provided.
 /// </remarks>
 public sealed class QueryApiKeyLocationExtractor(
     IOptions<ApiKeyCredentialExtractorOptions> options)
@@ -33,7 +35,7 @@ public sealed class QueryApiKeyLocationExtractor(
         HttpContext context,
         AuthKitSecuritySchemeDescriptor scheme)
     {
-        var queryName = ResolveName(scheme.Name, Options.DefaultQueryName);
+        var queryName = ResolveName(scheme.CredentialName, Options.DefaultQueryName);
 
         if (context.Request.Query.TryGetValue(queryName, out var query))
         {

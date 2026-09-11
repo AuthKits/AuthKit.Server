@@ -1,5 +1,7 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Configuration;
+using Host.Security.Options;
 using Microsoft.OpenApi;
 using Xunit;
 
@@ -31,18 +33,37 @@ public class AuthKitOpenApiSecuritySchemeMapperTests
         };
 
     [Theory]
-    [InlineData(AuthKitApiKeyLocation.Header, ParameterLocation.Header)]
-    [InlineData(AuthKitApiKeyLocation.Query, ParameterLocation.Query)]
-    [InlineData(AuthKitApiKeyLocation.Cookie, ParameterLocation.Cookie)]
+    [InlineData(AuthKitApiKeyLocation.Header, ParameterLocation.Header, ApiKeyCredentialExtractorOptions.DefaultHeaderNameValue)]
+    [InlineData(AuthKitApiKeyLocation.Query, ParameterLocation.Query, ApiKeyCredentialExtractorOptions.DefaultQueryNameValue)]
+    [InlineData(AuthKitApiKeyLocation.Cookie, ParameterLocation.Cookie, ApiKeyCredentialExtractorOptions.DefaultCookieNameValue)]
     public void ApiKey_WithHttpLocations_MapsToApiKeyAtLocation(
-        AuthKitApiKeyLocation location, ParameterLocation expected)
+        AuthKitApiKeyLocation location, ParameterLocation expected, string expectedName)
     {
         var mapped = AuthKitOpenApiSecuritySchemeMapper.Map(
             Describe(AuthKitSecuritySchemeType.ApiKey, location), Version);
 
         Assert.Equal(SecuritySchemeType.ApiKey, mapped.Type);
         Assert.Equal(expected, mapped.In);
-        Assert.Equal("scheme", mapped.Name);
+        Assert.Equal(expectedName, mapped.Name);
+    }
+
+    [Fact]
+    public void ApiKey_WithExplicitCredentialName_WinsOverDefault()
+    {
+        var descriptor = new AuthKitSecuritySchemeDescriptor
+        {
+            Name = "DevTokens",
+            CredentialName = "X-Dev-Key",
+            Type = AuthKitSecuritySchemeType.ApiKey,
+            In = AuthKitApiKeyLocation.Header,
+            Description = "desc"
+        };
+
+        var mapped = AuthKitOpenApiSecuritySchemeMapper.Map(descriptor, Version);
+
+        Assert.Equal(SecuritySchemeType.ApiKey, mapped.Type);
+        Assert.Equal(ParameterLocation.Header, mapped.In);
+        Assert.Equal("X-Dev-Key", mapped.Name);
     }
 
     [Fact]
@@ -63,7 +84,7 @@ public class AuthKitOpenApiSecuritySchemeMapperTests
 
         Assert.Equal(SecuritySchemeType.Http, mapped.Type);
         Assert.Equal("basic", mapped.Scheme);
-        Assert.Equal("scheme", mapped.Name);
+        Assert.Equal(ApiKeyCredentialExtractorOptions.DefaultHeaderNameValue, mapped.Name);
     }
 
     [Fact]
