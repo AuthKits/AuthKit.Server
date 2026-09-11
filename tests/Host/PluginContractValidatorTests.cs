@@ -24,7 +24,7 @@ public class PluginContractValidatorTests
 
         public string Name => "Fake";
         public string Version => "1.0.0";
-        public static void ConfigureServices(IServiceCollection services, IConfiguration configuration) { }
+        public void ConfigureServices(IServiceCollection services, IConfiguration configuration) { }
         public IReadOnlyDictionary<string, AuthKitSecuritySchemeDescriptor> GetSecuritySchemes() => _schemes;
     }
 
@@ -44,9 +44,9 @@ public class PluginContractValidatorTests
     {
         public List<string> Warnings { get; } = new();
 
-        public static IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
 
-        public static bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
+        public bool IsEnabled(Microsoft.Extensions.Logging.LogLevel logLevel) => true;
 
         public void Log<TState>(
             Microsoft.Extensions.Logging.LogLevel logLevel,
