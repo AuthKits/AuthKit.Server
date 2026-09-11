@@ -1,3 +1,4 @@
+using System.Security;
 using System.Security.Claims;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Security.LocationExtractors;
@@ -95,7 +96,13 @@ public sealed class ApiKeyCredentialExtractor(
             context.User = new ClaimsPrincipal(identity);
             logger.LogDebug("API key validated for {Subject} via scheme {Scheme}", principal.Subject, scheme.Name);
         }
-        catch (Exception ex)
+        catch (UnauthorizedAccessException ex)
+        {
+            logger.LogWarning(ex, "Failed to validate API key for scheme {Scheme}", scheme.Name);
+            WriteUnauthorized(context);
+            return;
+        }
+        catch (SecurityException ex)
         {
             logger.LogWarning(ex, "Failed to validate API key for scheme {Scheme}", scheme.Name);
             WriteUnauthorized(context);
