@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.Loader;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
@@ -126,7 +127,35 @@ public static class PluginLoader
 
                 logger.LogInformation("Loaded plugin '{Name}' v{Version} from {Dir}", plugin.Name, plugin.Version, pluginDir);
             }
-            catch (Exception ex)
+            catch (FileNotFoundException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (FileLoadException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (BadImageFormatException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (TypeLoadException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (MissingMethodException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (TargetInvocationException ex)
+            {
+                logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
+            }
+            catch (InvalidCastException ex)
             {
                 logger.LogError(ex, "Failed to load plugin from '{Dir}'.", pluginDir);
             }
