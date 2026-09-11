@@ -1,6 +1,10 @@
 using Host.Configuration;
 using Host.Plugins;
 using Host.Cli;
+using Host.Security;
+using AuthKit.Plugins.Abstractions;
+using System.Reflection;
+using AuthKit.Plugins.Abstractions.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +13,13 @@ var pluginsPath = builder.Configuration["AuthKit:PluginsPath"]
     ?? Path.Combine(AppContext.BaseDirectory, "plugins");
 
 var pluginLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("PluginLoader");
-var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger);
+var hostVersion = SemanticVersion.Parse(Assembly.GetEntryAssembly()!
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+        .InformationalVersion!.Split('+')[0]);
+
+var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger, hostVersion);
+
+var restfulLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("RestfulConfiguration");
 
 // === Core Config ===
 builder.Services.AddSingleton(plugins);
@@ -17,7 +27,8 @@ builder.Services.AddAuthKitCore();
 
 builder.Services.ConfigureApp(builder.Configuration, plugins)
     .AddGrpcServices()
-    .AddRestfulServices(plugins)
+    .AddRestfulServices(plugins, builder.Configuration, restfulLogger)
+    .AddApiKeyCredentialExtraction()
     .AddKeycloakServices();
 
 foreach (var lp in plugins)

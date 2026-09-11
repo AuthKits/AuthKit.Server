@@ -1,0 +1,131 @@
+version: '3'
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: '1'
+  REGISTRY: ghcr.io
+  IMAGE: authkits/authkit.server
+
+vars:
+  SOLUTION: AuthKit.slnx
+  HOST_PROJECT: src/Host/Host.csproj
+  PLUGINS_DIR: src/Plugins
+  VALIDATOR:
+    sh: echo tools/PluginContractValidator
+  VERSION:
+    sh: git describe --tags --always 2>/dev/null || echo dev
+
+tasks:
+  default:
+    desc: List all available tasks
+    cmds:
+      - task --list
+    silent: true
+
+  restore:
+    desc: Restore NuGet dependencies
+    preconditions:
+      - sh: command -v dotnet >/dev/null
+        msg: "dotnet SDK is required (https://dot.net)"
+    sources:
+      - '**/*.csproj'
+      - '{{.SOLUTION}}'
+      - Directory.Packages.props
+    generates:
+      - '**/obj/project.assets.json'
+    cmds:
+      - dotnet restore {{.SOLUTION}}
+
+  build:
+    desc: Build the solution in Release
+    deps: [restore]
+    sources:
+      - 'src/**/*.cs'
+      - '**/*.csproj'
+    generates:
+      - 'src/Host/bin/**'
+    cmds:
+      - dotnet build {{.SOLUTION}} --configuration Release --no-restore
+
+  test:
+    desc: Run the test suite
+    deps: [build]
+    cmds:
+      - dotnet test {{.SOLUTION}} --configuration Release --no-build
+
+  test:watch:
+    desc: Run tests and re-run on file changes
+    deps: [build]
+    watch: true
+    cmds:
+      - dotnet test {{.SOLUTION}} --configuration Release --no-build
+
+  format:
+    desc: Verify code formatting (fails if changes required)
+    cmds:
+      - dotnet format {{.SOLUTION}} --verify-no-changes
+
+  format:fix:
+    desc: Apply code formatting in place
+    cmds:
+      - dotnet format {{.SOLUTION}}
+
+  security:audit:
+    desc: List vulnerable NuGet packages (incl. transitive)
+    cmds:
+      - dotnet list {{.SOLUTION}} package --vulnerable --include-transitive
+
+  security:outdated:
+    desc: List outdated NuGet packages
+    cmds:
+      - dotnet list {{.SOLUTION}} package --outdated
+
+  plugins:publish:
+    desc: Publish all plugins to out/plugins/<name>
+    preconditions:
+      - sh: command -v dotnet >/dev/null
+        msg: "dotnet SDK is required (https://dot.net)"
+    cmds:
+      - |
+        mkdir -p out/plugins
+        for proj in $(find {{.PLUGINS_DIR}} -name '*.csproj' \
+            -not -path '*/Abstractions/*' \
+            -not -path '*/obj/*' \
+            -not -path '*/bin/*'); do
+          name=$(basename "$proj" .csproj)
+          echo "Publishing plugin: $name"
+          dotnet publish "$proj" --configuration Release --output "out/plugins/$name" --nologo
+        done
+
+  plugins:validate:
+    desc: Validate plugin contracts against the loaded assemblies
+    deps: [plugins:publish]
+    cmds:
+      - dotnet build {{.VALIDATOR}} --configuration Release --nologo
+      - |
+        DLL=$(find {{.VALIDATOR}}/bin/Release -name PluginContractValidator.dll | head -n1)
+        dotnet "$DLL" "$(pwd)/out/plugins"
+
+  ci:
+    desc: Run the full local CI pipeline
+    deps:
+      - build
+      - test
+      - format
+      - plugins:validate
+    aliases:
+      - precommit
+
+  clean:
+    desc: Remove build output and staging directories
+    cmds:
+      - dotnet clean {{.SOLUTION}} --nologo
+      - cmd: rm -rf out
+        platforms: [linux, darwin]
+      - cmd: Remove-Item -Recurse -Force out -ErrorAction SilentlyContinue
+        platforms: [windows]
+
+includes:
+  docker:
+    taskfile: ./Taskfile.docker.yml

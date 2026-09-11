@@ -1,0 +1,56 @@
+version: '3'
+
+vars:
+  PROJECT_NAME: DevTokens                     # Name of the project
+  CONFIGURATION: Debug                        # Build configuration (Debug/Release)
+  TARGET_FRAMEWORK: net10.0                   # Target .NET framework
+  OUTPUT_DIR: bin/{{.CONFIGURATION}}/{{.TARGET_FRAMEWORK}}  # Output directory for builds
+  PROJECT_FILE: '{{.PROJECT_NAME}}.csproj'   # Path to the project file
+  ASSEMBLY_FILE: '{{.USER_WORKING_DIR}}/{{.OUTPUT_DIR}}/{{.PROJECT_NAME}}.dll'  # Path to the compiled DLL
+  MANIFEST_OUTPUT: '{{.USER_WORKING_DIR}}/manifest.json'  # Output path for the generated manifest
+  MANIFEST_GENERATOR: ../../../../tools/AuthKit.ManifestGenerator  # Path to the manifest generator tool
+
+env:
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'  # Disables .NET CLI telemetry
+
+tasks:
+  default:
+    desc: Lists available tasks
+    cmds:
+      - task --list
+
+  build:
+    desc: Builds the DevTokens project without restoring NuGet packages
+    cmds:
+      - dotnet build {{.PROJECT_FILE}} --configuration {{.CONFIGURATION}} --no-restore
+
+  clean:
+    desc: Cleans the DevTokens project (deletes build artifacts)
+    cmds:
+      - dotnet clean {{.PROJECT_FILE}} --configuration {{.CONFIGURATION}}
+
+  generate-manifest:
+    desc: Generates a manifest for DevTokens using AuthKit.ManifestGenerator
+    deps:
+      - build # Ensures the project is built before generating the manifest
+      - build-manifest-generator # Ensures the manifest generator is built
+    cmds:
+      - cd {{.MANIFEST_GENERATOR}} && dotnet run --project CLI/AuthKit.ManifestGenerator.CLI.csproj --configuration {{.CONFIGURATION}} --no-build -- --input {{.ASSEMBLY_FILE}} --output {{.MANIFEST_OUTPUT}}
+      - echo "Manifest generated at {{.MANIFEST_OUTPUT}}"
+
+  build-manifest-generator:
+    desc: Builds the AuthKit.ManifestGenerator tool
+    cmds:
+      - cd {{.MANIFEST_GENERATOR}} && dotnet build --configuration {{.CONFIGURATION}} --no-restore
+
+  validate:
+    desc: Cleans and builds the project
+    cmds:
+      - task: clean
+      - task: build
+
+  ci:
+    desc: Full validation of the project and manifest generation (CI-friendly)
+    cmds:
+      - task: validate
+      - task: generate-manifest

@@ -1,5 +1,6 @@
 using Host.Plugins;
 using Host.Restful.Middleware.Exceptions;
+using Host.Security.Middleware;
 
 namespace Host.Configuration;
 
@@ -10,8 +11,7 @@ namespace Host.Configuration;
 /// <remarks>
 /// <para>
 /// Configures routing, validation and exception handling, plugin-provided
-/// middleware, authentication, authorization, and development-only API
-/// documentation middleware.
+/// middleware, and authentication and authorization.
 /// </para>
 /// <para>
 /// Plugin middleware is inserted after the host exception handling middleware
@@ -44,14 +44,10 @@ public static class AppMiddlewareConfiguration
                 app.UseMiddleware(middlewareType);
         }
 
+        app.UseMiddleware<ApiKeyCredentialExtractor>();
+
         app.UseAuthentication();
         app.UseAuthorization();
-
-        if (!app.Environment.IsDevelopment())
-            return app;
-
-        app.UseSwagger();
-        app.UseSwaggerUI();
 
         return app;
     }

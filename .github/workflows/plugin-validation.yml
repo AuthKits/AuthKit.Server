@@ -1,0 +1,58 @@
+name: Plugin Contract Validation
+
+on:
+  push:
+    branches: [main, development]
+    tags: ['v*']
+    paths:
+      - 'src/Plugins/**'
+      - 'tools/PluginContractValidator/**'
+      - '.github/workflows/plugin-validation.yml'
+  pull_request:
+    branches: [main, development]
+    paths:
+      - 'src/Plugins/**'
+      - 'tools/PluginContractValidator/**'
+      - '.github/workflows/plugin-validation.yml'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  VALIDATOR_PROJECT: 'tools/PluginContractValidator/PluginContractValidator.csproj'
+  PLUGINS_STAGING: 'out/plugins'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    name: Validate Plugin Contracts
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Publish plugins
+        run: |
+          mkdir -p "${{ env.PLUGINS_STAGING }}"
+          for proj in $(find src/Plugins -name '*.csproj' \
+              -not -path '*/Abstractions/*' \
+              -not -path '*/obj/*' \
+              -not -path '*/bin/*'); do
+            name=$(basename "$proj" .csproj)
+            echo "Publishing plugin: $name"
+            dotnet publish "$proj" -c Release -o "${{ env.PLUGINS_STAGING }}/$name" --nologo
+          done
+
+      - name: Build contract validator
+        run: dotnet build "${{ env.VALIDATOR_PROJECT }}" -c Release --nologo
+
+      - name: Run contract validation
+        run: |
+          VALIDATOR_DLL="tools/PluginContractValidator/bin/Release/net10.0/PluginContractValidator.dll"
+          dotnet "$VALIDATOR_DLL" "${{ github.workspace }}/${{ env.PLUGINS_STAGING }}"

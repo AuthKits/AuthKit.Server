@@ -1,12 +1,12 @@
-namespace AuthKit.Plugins.Abstractions;
+namespace AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
 /// <summary>
-/// Describes security scheme exposed by an AuthKit authentication plugin.
+/// Describes a security scheme exposed by an AuthKit authentication plugin.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <see cref="AuthKitSecuritySchemeDescriptor"/> provides transport-agnostic
-/// metadata describing how client authenticates when communicating with
+/// metadata describing how a client authenticates when communicating with
 /// service protected by AuthKit.
 /// </para>
 /// <para>
@@ -24,7 +24,28 @@ public sealed record AuthKitSecuritySchemeDescriptor
     /// <summary>
     /// The unique name used to identify the security scheme.
     /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Name"/> is a transport-agnostic scheme identity. It is used in logs,
+    /// validation messages, and as the scheme key in OpenAPI documents. It must not be
+    /// reused as the transport credential field name.
+    /// </para>
+    /// </remarks>
     public required string Name { get; init; }
+
+    /// <summary>
+    /// The transport-specific field name used to locate the credential, such as the
+    /// header, query parameter, cookie, gRPC metadata key, or body field name.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="CredentialName"/> is independent from <see cref="Name"/>: a scheme can
+    /// be identified as <c>DevTokens</c> while its credential travels as an
+    /// <c>X-Api-Key</c> header. When not set, hosts fall back to their configured default
+    /// field name for the selected <see cref="In"/> location.
+    /// </para>
+    /// </remarks>
+    public string? CredentialName { get; init; }
 
     /// <summary>
     /// The type of authentication mechanism implemented by the security scheme.

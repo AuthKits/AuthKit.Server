@@ -31,7 +31,8 @@ public static class KestrelConfiguration
         ConfigureListeners(webHost, certPath, certPassword, portRest, portGrpc);
 
         Console.ForegroundColor = ConsoleColor.Green;
-        Console.WriteLine($"✅ Kestrel configured: REST={portRest}, gRPC={portGrpc}, Cert={certPath}");
+        var protocol = File.Exists(certPath) ? "HTTPS" : "HTTP";
+        Console.WriteLine($"✅ Kestrel configured ({protocol}): REST={portRest}, gRPC={portGrpc}, Cert={certPath}");
         Console.ResetColor();
     }
 
@@ -64,8 +65,8 @@ public static class KestrelConfiguration
     {
         if (!File.Exists(certPath))
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"❌ Certificate not found at: {certPath}");
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine($"⚠️  Certificate not found at: {certPath}. Falling back to HTTP.");
             Console.ResetColor();
         }
 
@@ -92,19 +93,32 @@ public static class KestrelConfiguration
         int portRest,
         int portGrpc)
     {
+        bool useHttps = File.Exists(certPath);
+
         webHost.ConfigureKestrel(options =>
         {
             // REST (HTTP/1 + HTTP/2)
             options.ListenAnyIP(portRest, listenOptions =>
             {
-                listenOptions.UseHttps(certPath, certPassword);
+                if (useHttps)
+                {
+                    listenOptions.UseHttps(certPath, certPassword);
+                }
                 listenOptions.Protocols = HttpProtocols.Http1AndHttp2;
             });
 
             // gRPC (HTTP/2 only)
             options.ListenAnyIP(portGrpc, listenOptions =>
             {
-                listenOptions.UseHttps(certPath, certPassword);
+                if (useHttps)
+                {
+                    listenOptions.UseHttps(certPath, certPassword);
+                }
+                else
+                {
+                    // gRPC requires HTTP/2, which on some platforms requires HTTPS or specific configuration
+                    // for ClearText.
+                }
                 listenOptions.Protocols = HttpProtocols.Http2;
             });
         });

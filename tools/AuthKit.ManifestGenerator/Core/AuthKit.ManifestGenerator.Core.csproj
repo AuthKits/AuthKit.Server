@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.CommandLine" />
+    <ProjectReference Include="../../../src/Plugins/Abstractions/AuthKit.Plugins.Abstractions.csproj" />
+    <Compile Include="ServiceCollectionExtensions.cs" />
+    <Compile Include="Providers/IPluginTypeResolver.cs" />
+    <Compile Include="Providers/PluginTypeResolver.cs" />
+    <Compile Include="Providers/IPluginMetadataProvider.cs" />
+    <Compile Include="Providers/PluginMetadataProvider.cs" />
+    <Compile Include="Generators/IManifestGenerator.cs" />
+    <Compile Include="Generators/ManifestGenerator.cs" />
+  </ItemGroup>
+
+</Project>
