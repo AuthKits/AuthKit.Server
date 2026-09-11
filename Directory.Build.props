@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <GenerateResourceFiles>false</GenerateResourceFiles>
+  </PropertyGroup>
+  <ItemGroup>
+  </ItemGroup>
+</Project>
