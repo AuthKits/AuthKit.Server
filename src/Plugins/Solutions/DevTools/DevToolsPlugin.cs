@@ -18,11 +18,11 @@ namespace DevTools;
 /// <para>
 /// The plugin serves the Swagger UI for the host's OpenAPI document and
 /// provides a single-page interface for inspecting gRPC services, their
-/// methods and messages, and executing unary requests.
+/// methods, and messages, and executing unary requests.
 /// </para>
 /// <para>
-/// The OpenAPI document itself and the gRPC services are provided by the Host
-/// core through dependency injection. The plugin does not generate Swagger
+/// The Host core provides the OpenAPI document itself and the gRPC services
+///  through dependency injection. The plugin does not generate Swagger
 /// documents and does not require generated gRPC client stubs; methods are
 /// invoked dynamically using the protobuf descriptors returned by the
 /// catalog.
