@@ -1,10 +1,10 @@
 using System.Reflection;
-using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts;
 
 namespace Host.Plugins;
 
 /// <summary>
-/// Represents plugin loaded from disk together with its contract instance,
+/// Represents a plugin loaded from disk together with its contract instance,
 /// assembly, and source directory.
 /// </summary>
 /// <remarks>

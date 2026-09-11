@@ -1,12 +1,12 @@
-namespace AuthKit.Plugins.Abstractions;
+namespace AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
 /// <summary>
-/// Describes security scheme exposed by an AuthKit authentication plugin.
+/// Describes a security scheme exposed by an AuthKit authentication plugin.
 /// </summary>
 /// <remarks>
 /// <para>
 /// <see cref="AuthKitSecuritySchemeDescriptor"/> provides transport-agnostic
-/// metadata describing how client authenticates when communicating with
+/// metadata describing how a client authenticates when communicating with
 /// service protected by AuthKit.
 /// </para>
 /// <para>

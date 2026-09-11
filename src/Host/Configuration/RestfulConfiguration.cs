@@ -1,4 +1,5 @@
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Plugins;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;

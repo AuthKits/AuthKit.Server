@@ -1,0 +1,213 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  schedule:
+    - cron: '0 2 * * 1'
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  SOLUTION_FILE: 'AuthKit.slnx'
+
+permissions:
+  contents: read
+  security-events: write
+  packages: read
+  id-token: write
+  attestations: write
+
+jobs:
+  dependency-review:
+    name: Dependency Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Dependency review (pull request)
+        if: github.event_name == 'pull_request'
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
+
+      - name: NuGet vulnerability audit (push)
+        if: github.event_name != 'pull_request'
+        run: |
+          dotnet restore ${{ env.SOLUTION_FILE }}
+          dotnet list ${{ env.SOLUTION_FILE }} package --vulnerable --include-transitive || true
+
+  codeql-analysis:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: csharp
+          queries: security-extended,security-and-quality
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:csharp"
+
+  secret-scan:
+    name: Secret Scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Run TruffleHog
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: main
+          head: HEAD
+
+  license-check:
+    name: License Compliance
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Check licenses
+        run: |
+          dotnet tool install --global dotnet-license-scanner
+          export PATH="$PATH:$HOME/.dotnet/tools"
+          dotnet-license-scanner scan --solution ${{ env.SOLUTION_FILE }} --output licenses.json --fail-on-unapproved
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: license-report
+          path: licenses.json
+
+  sbom-generation:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      id-token: write
+      contents: write
+      attestations: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Build solution
+        run: dotnet build ${{ env.SOLUTION_FILE }} --configuration Release --no-restore
+
+      - name: Generate SBOM
+        uses: ansible/sbom-action@v1
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Upload SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+
+      - name: Attest SBOM
+        uses: actions/attest-sbom@v2
+        with:
+          sbom-path: sbom.spdx.json
+
+  container-scan:
+    name: Container Scan
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check Dockerfile exists
+        id: dockerfile
+        run: |
+          if [ -f Dockerfile ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No Dockerfile found — skipping container scan."
+          fi
+
+      - name: Build Docker image
+        if: steps.dockerfile.outputs.present == 'true'
+        run: |
+          docker build -t authkit-server:latest -f Dockerfile .
+
+      - name: Run Trivy vulnerability scanner
+        if: steps.dockerfile.outputs.present == 'true'
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'authkit-server:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH,MEDIUM'
+
+      - name: Upload Trivy results
+        if: always() && steps.dockerfile.outputs.present == 'true'
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif
+          category: container-scan
+
+  dotnet-format:
+    name: Code Style Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Check code formatting (PluginContractValidator)
+        run: dotnet format tools/PluginContractValidator/PluginContractValidator.csproj --verify-no-changes --verbosity diagnostic

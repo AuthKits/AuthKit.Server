@@ -1,7 +1,9 @@
 /certs/devcert.pfx
+.obsidian/
 bin/
 obj/
 /plugins/
+/out/
 .idea/
 .env
 /net-commander

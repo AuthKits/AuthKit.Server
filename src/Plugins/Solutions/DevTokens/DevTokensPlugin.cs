@@ -1,6 +1,8 @@
 using DevTokens.Options;
 using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using FluentValidation;
 using DevTokens.Interfaces;
 using DevTokens.Middleware;

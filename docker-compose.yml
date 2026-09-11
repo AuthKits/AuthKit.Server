@@ -42,6 +42,7 @@ services:
   keycloak-db:
     image: postgres:15
     container_name: keycloak-db
+    profiles: ["keycloak"]
     environment:
       POSTGRES_DB: Auth
       POSTGRES_USER: postgres
@@ -58,6 +59,7 @@ services:
       context: Deploy/Keycloak
       dockerfile: Dockerfile
     container_name: keycloak
+    profiles: ["keycloak"]
     command: >
       start
       --http-enabled=true
@@ -72,7 +74,7 @@ services:
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
     volumes:
-      - ./keycloak/realm-authz.json:/opt/keycloak/data/import/realm-authz.json:ro
+      - ./Deploy/Keycloak/realms/realm-authz.json:/opt/keycloak/data/import/realm-authz.json:ro
     ports:
       - "8081:8080"
     depends_on:

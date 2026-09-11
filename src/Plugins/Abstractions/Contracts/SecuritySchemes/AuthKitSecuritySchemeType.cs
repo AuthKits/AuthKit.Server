@@ -1,3 +1,5 @@
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
+
 namespace AuthKit.Plugins.Abstractions;
 
 /// <summary>
@@ -49,7 +51,7 @@ public enum AuthKitSecuritySchemeType
     /// </summary>
     /// <remarks>
     /// OAuth 2.0 schemes describe authorization flows in which a client
-    /// obtains an access token from an authorization server and presents
+    /// gets an access token from an authorization server and presents
     /// that token when accessing protected resources.
     /// </remarks>
     OAuth2 = 2,

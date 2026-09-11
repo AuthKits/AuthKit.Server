@@ -1,0 +1,52 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build the Docker image locally (no push)
+    cmds:
+      - docker build -t {{.IMAGE}}:dev -f Dockerfile .
+
+  run:
+    desc: Run the local stack via docker compose (auth + Postgres)
+    cmds:
+      - |
+        mkdir -p certs
+        if [ ! -f certs/devcert.pfx ]; then
+          echo "Generating self-signed dev certificate into certs/devcert.pfx ..."
+          docker run --rm -v "$(pwd)/certs:/certs" mcr.microsoft.com/dotnet/sdk:10.0 bash -c \
+            "openssl req -x509 -newkey rsa:2048 -nodes -keyout /certs/devkey.pem -out /certs/devcert.pem -days 365 -subj '/CN=localhost' && openssl pkcs12 -export -out /certs/devcert.pfx -inkey /certs/devkey.pem -in /certs/devcert.pem -passout pass: && rm -f /certs/devkey.pem /certs/devcert.pem"
+          echo "Created certs/devcert.pfx (empty password)."
+        fi
+      - docker compose up --build auth
+
+  test:
+    desc: Smoke test the stack (auth + Postgres) with a /health check
+    cmds:
+      - |
+        mkdir -p certs
+        if [ ! -f certs/devcert.pfx ]; then
+          echo "Generating self-signed dev certificate into certs/devcert.pfx ..."
+          docker run --rm -v "$(pwd)/certs:/certs" mcr.microsoft.com/dotnet/sdk:10.0 bash -c \
+            "openssl req -x509 -newkey rsa:2048 -nodes -keyout /certs/devkey.pem -out /certs/devcert.pem -days 365 -subj '/CN=localhost' && openssl pkcs12 -export -out /certs/devcert.pfx -inkey /certs/devkey.pem -in /certs/devcert.pem -passout pass: && rm -f /certs/devkey.pem /certs/devcert.pem"
+          echo "Created certs/devcert.pfx (empty password)."
+        fi
+      - docker compose up -d --build auth
+      - |
+        sleep 10
+        docker compose logs auth
+        curl -fk https://localhost:5000/health && echo " => /health OK" || echo " => /health FAILED"
+      - docker compose down
+
+  down:
+    desc: Stop the local compose stack
+    cmds:
+      - docker compose down
+
+  publish:
+    desc: Build multi-arch image and push to GHCR
+    preconditions:
+      - sh: command -v docker >/dev/null && docker buildx version >/dev/null 2>&1
+        msg: "docker and docker buildx are required"
+    prompt: "Push {{.REGISTRY}}/{{.IMAGE}}:{{.VERSION}} to GHCR? Requires docker login."
+    cmds:
+      - docker buildx build --push --platform linux/amd64,linux/arm64 -t {{.REGISTRY}}/{{.IMAGE}}:latest -t {{.REGISTRY}}/{{.IMAGE}}:{{.VERSION}} -f Dockerfile .

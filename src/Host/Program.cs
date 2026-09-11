@@ -1,6 +1,9 @@
 using Host.Configuration;
 using Host.Plugins;
 using Host.Cli;
+using AuthKit.Plugins.Abstractions;
+using System.Reflection;
+using AuthKit.Plugins.Abstractions.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -9,7 +12,11 @@ var pluginsPath = builder.Configuration["AuthKit:PluginsPath"]
     ?? Path.Combine(AppContext.BaseDirectory, "plugins");
 
 var pluginLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("PluginLoader");
-var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger);
+var hostVersion = SemanticVersion.Parse(Assembly.GetEntryAssembly()!
+        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
+        .InformationalVersion!.Split('+')[0]);
+
+var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger, hostVersion);
 
 var restfulLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("RestfulConfiguration");
 

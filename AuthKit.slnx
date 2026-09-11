@@ -11,6 +11,9 @@
   <Folder Name="/Plugins/Solutions/">
     <Project Path="src/Plugins/Solutions/DevTokens/DevTokens.csproj" />
   </Folder>
+  <Folder Name="/Tools/">
+    <Project Path="tools/AuthKit.PluginContractValidator/AuthKit.PluginContractValidator.csproj" />
+  </Folder>     
   <Project Path="src/Core/Core.csproj" />
   <Project Path="src/Host/Host.csproj" />
 </Solution>

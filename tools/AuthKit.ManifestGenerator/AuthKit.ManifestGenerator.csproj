@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateAssemblyAttributes>false</GenerateAssemblyAttributes>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ManagePackageVersionsCentrally>false</ManagePackageVersionsCentrally>
+    <RestoreOnBuild>true</RestoreOnBuild>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Core/AuthKit.ManifestGenerator.Core.csproj" />
+    <ProjectReference Include="CLI/AuthKit.ManifestGenerator.CLI.csproj" />
+    <ProjectReference Include="../../src/Plugins/Abstractions/AuthKit.Plugins.Abstractions.csproj" />
+    <PackageReference Include="System.CommandLine" Version="3.0.0-preview.7.26381.103" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.0" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="Core\Generators\SemanticVersionJsonConverter.cs" />
+  </ItemGroup>
+  
+  <PropertyGroup>
+    <NoWarn>NU1008;NU1507</NoWarn>
+  </PropertyGroup>
+
+</Project>
