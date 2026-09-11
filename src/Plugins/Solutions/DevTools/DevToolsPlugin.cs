@@ -46,15 +46,6 @@ namespace DevTools;
 public sealed class DevToolsPlugin : IAuthKitPlugin
 {
     /// <summary>
-    /// Gets the unique name of the plugin.
-    /// </summary>
-    public string Name => "DevTools";
-
-    /// <summary>
-    /// Gets the current version of the plugin.
-    /// </summary>
-    public string Version => "1.0.0";
-    /// <summary>
     /// Registers the gRPC service catalog, invocation runtime, and Swagger
     /// serving components in the dependency injection container.
     /// </summary>
