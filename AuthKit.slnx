@@ -10,10 +10,15 @@
   </Folder>
   <Folder Name="/Plugins/Solutions/">
     <Project Path="src/Plugins/Solutions/DevTokens/DevTokens.csproj" />
+    <Project Path="src/Plugins/Solutions/DevTools/DevTools.csproj" />
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="tools/AuthKit.PluginContractValidator/AuthKit.PluginContractValidator.csproj" />
   </Folder>     
   <Project Path="src/Core/Core.csproj" />
   <Project Path="src/Host/Host.csproj" />
+  <Folder Name="/Tests/">
+    <Project Path="tests/Host/AuthKit.Host.Tests.csproj" />
+    <Project Path="tests/Plugins/Abstractions/AuthKit.Plugins.Abstractions.Tests.csproj" />
+  </Folder>
 </Solution>

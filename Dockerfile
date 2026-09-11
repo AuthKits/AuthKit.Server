@@ -16,6 +16,10 @@ COPY ["src/Host/Host.csproj", "src/Host/"]
 COPY ["src/Core/Core.csproj", "src/Core/"]
 COPY ["src/Plugins/Abstractions/AuthKit.Plugins.Abstractions.csproj", "src/Plugins/Abstractions/"]
 COPY ["src/Plugins/Solutions/DevTokens/DevTokens.csproj", "src/Plugins/Solutions/DevTokens/"]
+COPY ["src/Plugins/Solutions/DevTools/DevTools.csproj", "src/Plugins/Solutions/DevTools/"]
+
+COPY ["tests/Host/AuthKit.Host.Tests.csproj", "tests/Host/"]
+COPY ["tests/Plugins/Abstractions/AuthKit.Plugins.Abstractions.Tests.csproj", "tests/Plugins/Abstractions/"]
 COPY ["tools/PluginContractValidator/PluginContractValidator.csproj", "tools/PluginContractValidator/"]
 
 RUN dotnet restore "AuthKit.slnx"
@@ -30,6 +34,7 @@ FROM build AS publish
 WORKDIR /src
 RUN dotnet publish "src/Host/Host.csproj" -c Release -o /app/publish
 RUN dotnet publish "src/Plugins/Solutions/DevTokens/DevTokens.csproj" -c Release -o /app/publish/plugins/DevTokens
+RUN dotnet publish "src/Plugins/Solutions/DevTools/DevTools.csproj" -c Release -o /app/publish/plugins/DevTools
 COPY src/Plugins/Solutions/DevTokens/plugin.manifest.json /app/publish/plugins/DevTokens/plugin.manifest.json
 
 FROM base AS final

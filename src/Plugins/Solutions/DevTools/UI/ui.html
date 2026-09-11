@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>gRPC UI — AuthKit</title>
+<style>
+  :root {
+    --bg: #0f1419;
+    --panel: #161c24;
+    --panel2: #1c2530;
+    --border: #2a3646;
+    --text: #e6edf3;
+    --muted: #8b98a5;
+    --accent: #4f9cf9;
+    --green: #3fb950;
+    --red: #f85149;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+           background: var(--panel); border-bottom: 1px solid var(--border); }
+  header h1 { font-size: 16px; margin: 0; }
+  .target { color: var(--muted); font-family: var(--mono); font-size: 12px; }
+  .badge { font-size: 11px; padding: 2px 8px; border-radius: 10px;
+           background: var(--panel2); border: 1px solid var(--border); color: var(--muted); }
+  .badge.stream { color: var(--accent); border-color: var(--accent); }
+  .badge.live { color: var(--green); border-color: var(--green); }
+  main { display: grid; grid-template-columns: 340px 1fr; height: calc(100vh - 53px); }
+  aside { border-right: 1px solid var(--border); overflow: auto; background: var(--panel); }
+  section { overflow: auto; padding: 16px; }
+  .service { border-bottom: 1px solid var(--border); }
+  .service > summary { cursor: pointer; padding: 10px 14px; font-weight: 600;
+                       display: flex; gap: 8px; align-items: center; }
+  .service > summary:hover { background: var(--panel2); }
+  .methods { list-style: none; margin: 0; padding: 0 0 6px; }
+  .methods li { padding: 6px 14px 6px 28px; cursor: pointer; display: flex;
+                gap: 8px; align-items: baseline; font-family: var(--mono); font-size: 13px; }
+  .methods li:hover { background: var(--panel2); }
+  .methods li.active { background: var(--accent); color: #fff; }
+  .methods li.active .muted { color: #cfe4ff; }
+  .muted { color: var(--muted); }
+  .pill { font-size: 10px; padding: 1px 6px; border-radius: 8px;
+          border: 1px solid var(--border); color: var(--muted); }
+  .pill.uni { color: var(--green); border-color: var(--green); }
+  .pill.srv { color: var(--accent); border-color: var(--accent); }
+  .pill.cli { color: #d29922; border-color: #d29922; }
+  .card { background: var(--panel); border: 1px solid var(--border);
+          border-radius: 8px; margin-bottom: 16px; overflow: hidden; }
+  .card h2 { margin: 0; font-size: 13px; padding: 10px 14px; border-bottom: 1px solid var(--border);
+             background: var(--panel2); text-transform: uppercase; letter-spacing: .04em; }
+  .card .body { padding: 12px 14px; }
+  textarea { width: 100%; min-height: 120px; background: #0b1016; color: var(--text);
+             border: 1px solid var(--border); border-radius: 6px; padding: 10px;
+             font-family: var(--mono); font-size: 13px; resize: vertical; }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  .row { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; align-items: center; }
+  button { background: var(--accent); color: #fff; border: 0; border-radius: 6px;
+           padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer; }
+  button:hover { filter: brightness(1.1); }
+  button.secondary { background: var(--panel2); border: 1px solid var(--border); color: var(--text); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  .status { font-family: var(--mono); font-weight: 600; font-size: 13px; padding: 4px 12px;
+            border-radius: 12px; border: 1px solid transparent; }
+  .status.ok { color: var(--green); border-color: var(--green); }
+  .status.err { color: var(--red); border-color: var(--red); }
+  pre { background: #0b1016; border: 1px solid var(--border); border-radius: 6px;
+        padding: 12px; overflow: auto; font-family: var(--mono); font-size: 13px;
+        margin: 10px 0 0; max-height: 420px; white-space: pre-wrap; word-break: break-word; }
+  .schema { font-family: var(--mono); font-size: 12.5px; }
+  .schema .row-line { padding: 3px 0; }
+  .schema .indent { padding-left: 22px; }
+  .schema .type { color: var(--accent); }
+  .schema .enum { color: #d29922; }
+  .schema .rep { color: var(--muted); font-size: 11px; }
+  .schema span.req { color: var(--green); }
+  .empty { color: var(--muted); font-style: italic; padding: 6px 0; }
+  h3 { font-size: 13px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+</style>
+</head>
+<body>
+<header>
+  <h1>gRPC UI</h1>
+  <span class="badge live">AuthKit plugin</span>
+  <span class="target" id="target">scanning…</span>
+</header>
+<main>
+  <aside id="services">
+    <div class="empty" style="padding:14px;">Loading services…</div>
+  </aside>
+  <section id="detail">
+    <div class="empty">Select a method to inspect its schema and execute a request.</div>
+  </section>
+</main>
+<script>
+"use strict";
+
+const state = { services: [], selected: null, method: null };
+const API = "{{pathBase}}";
+
+const $ = (id) => document.getElementById(id);
+
+async function loadCatalog() {
+  try {
+    const res = await fetch(API + "/api/services");
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    state.services = data.services || [];
+    $("target").textContent = data.target || "";
+    renderServices();
+  } catch (err) {
+    document.querySelector("#services").innerHTML =
+      `<div class="empty" style="padding:14px;">Failed to load catalog: ${esc(err.message)}</div>`;
+  }
+}
+
+function renderServices() {
+  const aside = $("services");
+  if (!state.services.length) {
+    aside.innerHTML = `<div class="empty" style="padding:14px;">No gRPC services found.</div>`;
+    return;
+  }
+  aside.innerHTML = state.services.map((svc, si) => {
+    const methods = (svc.methods || []).map((m, mi) => {
+      const streaming = m.isClientStreaming && m.isServerStreaming ? "bidi"
+        : m.isClientStreaming ? "cli" : m.isServerStreaming ? "srv" : "uni";
+      const active = state.selected === si && state.method === mi ? " active" : "";
+      return `<li class="${active}" data-si="${si}" data-mi="${mi}">
+        <span class="pill ${streaming}" title="${streaming} streaming">${m.name}</span>
+      </li>`;
+    }).join("");
+    return `<details class="service" ${si === 0 ? "open" : ""}>
+      <summary>${esc(svc.package || svc.fileName)}
+        <span class="muted" style="font-weight:400;font-size:12px;">(${(svc.methods||[]).length})</span>
+      </summary>
+      <ul class="methods">${methods}</ul>
+    </details>`;
+  }).join("");
+
+  aside.querySelectorAll(".methods li").forEach(el =>
+    el.addEventListener("click", () => selectMethod(+el.dataset.si, +el.dataset.mi)));
+}
+
+function selectMethod(si, mi) {
+  state.selected = si;
+  state.method = mi;
+  document.querySelectorAll(".methods li").forEach(el => el.classList.remove("active"));
+  const svc = state.services[si];
+  const m = svc.methods[mi];
+  renderMethod(svc, m);
+}
+
+function fieldLabel(f) {
+  let type = f.fieldType;
+  if (f.isMap) {
+    const value = f.mapValue ? f.mapValue.fullName : (f.mapValueType || "?");
+    type = `map&lt;${f.mapKeyType}, ${value}&gt;`;
+  } else if (f.message && f.message.fullName !== f.message.name) {
+    type = f.message.fullName;
+  }
+  return `<span class="type">${type}</span>` +
+    (f.isRepeated && !f.isMap ? ' <span class="rep">[repeated]</span>' : "") +
+    (f.enumType ? ' <span class="enum">' + esc(f.enumType) + " (" +
+      (f.enumValues || []).map(esc).join("|") + ")</span>" : "");
+}
+
+function renderField(f, depth) {
+  const indent = "&nbsp;".repeat(4 * depth);
+  const msg = f.message && depth < 3
+    ? (f.message.fields || []).map(g => renderField(g, depth + 1)).join("")
+    : "";
+  return `<div class="row-line"><span class="indent">${indent}</span>${esc(f.name)}: ${fieldLabel(f)}</div>${msg}`;
+}
+
+function renderSchema(title, msg) {
+  if (!msg) return `<div class="empty">—</div>`;
+  const fields = msg.fields || [];
+  return `<h3>${esc(title)} — ${esc(msg.fullName)}</h3><div class="schema">` +
+    (fields.length ? fields.map(f => renderField(f, 0)).join("") : `<div class="empty">(empty)</div>`) +
+    `</div>`;
+}
+
+function renderMethod(svc, m) {
+  const streaming = m.isClientStreaming || m.isServerStreaming;
+  const desc = (m.isClientStreaming && m.isServerStreaming ? "Bidirectional stream"
+    : m.isClientStreaming ? "Client streaming"
+    : m.isServerStreaming ? "Server streaming" : "Unary");
+  $("detail").innerHTML = `
+    <div class="card">
+      <h2>${esc(m.fullName)} <span class="pill ${m.isClientStreaming?"cli":"uni"}">${desc}</span></h2>
+      <div class="body">
+        ${renderSchema("Request", m.request)}
+      </div>
+    </div>
+    <div class="card">
+      <h2>Response</h2>
+      <div class="body">${renderSchema("Message", m.response)}</div>
+    </div>
+    <div class="card">
+      <h2>Metadata headers</h2>
+      <div class="body">
+        <textarea id="headers" placeholder="Authorization: Bearer &lt;token>&#10;X-Custom: value">${defaultHeaders()}</textarea>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Request JSON</h2>
+      <div class="body">
+        <textarea id="request" spellcheck="false"></textarea>
+        <div class="row">
+          <button class="secondary" id="btn-defaults">Fill defaults</button>
+          <button class="secondary" id="btn-format">Format JSON</button>
+          <button id="btn-invoke" ${streaming ? "disabled title=\"Streaming is not supported\"" : ""}>Invoke</button>
+          <span class="status" id="status" hidden></span>
+        </div>
+        <pre id="response" hidden></pre>
+      </div>
+    </div>`;
+
+  const requestEl = $("request");
+  requestEl.value = prettyPrint(jsonFromSchema(m.request));
+  $("btn-defaults").addEventListener("click", () =>
+    (requestEl.value = prettyPrint(jsonFromSchema(m.request))));
+  $("btn-format").addEventListener("click", () =>
+    (requestEl.value = prettyPrint(requestEl.value)));
+  $("btn-invoke").addEventListener("click", () => invoke(svc, m));
+}
+
+function defaultHeaders() {
+  const dev = sessionStorage.getItem("grpc-ui-headers");
+  return dev ?? "Authorization: Bearer ";
+}
+
+function jsonFromSchema(msg, depth = 0) {
+  const out = {};
+  const seen = depth > 4;
+  for (const f of msg.fields || []) {
+    if (seen) { out[f.name] = null; continue; }
+    if (f.isMap) { out[f.name] = {}; continue; }
+    if (f.isRepeated) { out[f.name] = []; continue; }
+    if (f.message) { out[f.name] = jsonFromSchema(f.message, depth + 1); continue; }
+    if (f.fieldType === "Enum") { out[f.name] = (f.enumValues && f.enumValues[0]) || "UNKNOWN"; continue; }
+    switch (f.fieldType) {
+      case "String": case "Bytes": out[f.name] = ""; break;
+      case "Bool": out[f.name] = false; break;
+      case "Double": case "Float": out[f.name] = 0.0; break;
+      case "Int32": case "Int64": case "SInt32": case "SInt64":
+      case "UInt32": case "UInt64": case "Fixed32": case "Fixed64":
+      case "SFixed32": case "SFixed64": out[f.name] = 0; break;
+      default: out[f.name] = null;
+    }
+  }
+  return out;
+}
+
+function prettyPrint(text) {
+  try { return JSON.stringify(JSON.parse(text), null, 2); }
+  catch { return text; }
+}
+
+function parseHeaders(text) {
+  const headers = {};
+  for (const line of text.split("\n")) {
+    const idx = line.indexOf(":");
+    if (idx <= 0) continue;
+    const key = line.slice(0, idx).trim();
+    const value = line.slice(idx + 1).trim();
+    if (key) headers[key] = value;
+  }
+  return headers;
+}
+
+async function invoke(svc, m) {
+  const status = $("status");
+  const pre = $("response");
+  const headersText = $("headers").value;
+  sessionStorage.setItem("grpc-ui-headers", headersText);
+
+  const payload = {
+    service: svc.fullName || svc.package + "." + svc.name,
+    method: m.name,
+    requestJson: $("request").value,
+    headers: parseHeaders(headersText)
+  };
+
+  status.hidden = false;
+  status.className = "status";
+  status.textContent = "Invoking…";
+  pre.hidden = false;
+  pre.textContent = "";
+
+  try {
+    const res = await fetch(API + "/api/invoke", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+    const body = await res.json();
+    const ok = body.success && body.statusCode === 0;
+    status.className = "status " + (ok ? "ok" : "err");
+    status.textContent = `${body.statusName} · ${body.elapsedMs} ms`;
+    let text = body.detail ? "Error: " + body.detail + "\n\n" : "";
+    if (body.responseJson) {
+      try { text += JSON.stringify(JSON.parse(body.responseJson), null, 2); }
+      catch { text += body.responseJson; }
+    }
+    if (body.trailers && Object.keys(body.trailers).length) {
+      text += "\n\nTrailers:\n" + Object.entries(body.trailers)
+        .map(([k, v]) => k + ": " + v).join("\n");
+    }
+    pre.textContent = text || "(no response body)";
+  } catch (err) {
+    status.className = "status err";
+    status.textContent = "Request failed";
+    pre.textContent = String(err || err.message);
+  }
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g,
+    c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+loadCatalog();
+</script>
+</body>
+</html>
