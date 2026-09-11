@@ -49,7 +49,25 @@ public class AuthKitSecuritySchemeTypeTests
         Assert.Equal(0, (int)AuthKitSecuritySchemeType.ApiKey);
         Assert.Equal(1, (int)AuthKitSecuritySchemeType.Http);
         Assert.Equal(2, (int)AuthKitSecuritySchemeType.OAuth2);
-        Assert.Equal(2, (int)AuthKitSecuritySchemeType.OpenIdConnect);
+        Assert.Equal(7, (int)AuthKitSecuritySchemeType.OpenIdConnect);
+    }
+
+    [Fact]
+    public void OAuth2_AndOpenIdConnect_AreNoLongerAliased()
+    {
+        Assert.NotEqual((int)AuthKitSecuritySchemeType.OAuth2, (int)AuthKitSecuritySchemeType.OpenIdConnect);
+        Assert.NotEqual(AuthKitSecuritySchemeType.OAuth2, AuthKitSecuritySchemeType.OpenIdConnect);
+    }
+
+    [Fact]
+    public void AllNamedValues_HaveUniqueNumericValues()
+    {
+        var names = Enum.GetNames<AuthKitSecuritySchemeType>();
+        var values = names
+            .Select(name => (int)Enum.Parse<AuthKitSecuritySchemeType>(name))
+            .ToArray();
+
+        Assert.Equal(values.Length, values.Distinct().Count());
     }
 
     [Fact]
