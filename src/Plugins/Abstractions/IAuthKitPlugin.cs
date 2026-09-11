@@ -1,5 +1,7 @@
+using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace AuthKit.Plugins.Abstractions;
 
@@ -30,7 +32,19 @@ public interface IAuthKitPlugin
     /// The name is used to identify the plugin in host diagnostics,
     /// startup output, and other plugin-related metadata.
     /// </remarks>
-    string Name { get; }
+    /// <remarks>
+    /// By default the name is read from the <see cref="PluginMetadataAttribute"/>.
+    /// Plugin classes may override this member, but the attribute is the
+    /// preferred place to declare the plugin identity.
+    /// </remarks>
+    string Name
+    {
+        get
+        {
+            var metadata = GetPluginMetadata();
+            return metadata is null ? GetType().Name : metadata.Name;
+        }
+    }
 
     /// <summary>
     /// Gets the version of the plugin.
@@ -39,7 +53,17 @@ public interface IAuthKitPlugin
     /// The version is exposed as plugin metadata and may be used by the host
     /// for diagnostics, compatibility checks, or administrative surfaces.
     /// </remarks>
-    string Version { get; }
+    /// <remarks>
+    /// By default the version is read from the <see cref="PluginMetadataAttribute"/>.
+    /// </remarks>
+    string Version
+    {
+        get
+        {
+            var metadata = GetPluginMetadata();
+            return metadata is null ? "0.0.0" : metadata.Version;
+        }
+    }
 
     /// <summary>
     /// Gets an optional human-readable description of the plugin.
@@ -48,7 +72,10 @@ public interface IAuthKitPlugin
     /// The description may be displayed by the host in startup output,
     /// diagnostics, administrative interfaces, or other status surfaces.
     /// </remarks>
-    string? Description => null;
+    /// <remarks>
+    /// By default the description is read from the <see cref="PluginMetadataAttribute"/>.
+    /// </remarks>
+    string? Description => GetPluginMetadata()?.Description;
 
     /// <summary>
     /// Registers the plugin's services in the host dependency injection container.
@@ -138,4 +165,11 @@ public interface IAuthKitPlugin
     /// </remarks>
     IReadOnlyDictionary<string, AuthKitSecuritySchemeDescriptor> GetSecuritySchemes() =>
         new Dictionary<string, AuthKitSecuritySchemeDescriptor>();
+
+    /// <summary>
+    /// Reads the <see cref="PluginMetadataAttribute"/> declared on the plugin
+    /// implementation class.
+    /// </summary>
+    private PluginMetadataAttribute? GetPluginMetadata() =>
+        ((object)this).GetType().GetCustomAttribute<PluginMetadataAttribute>();
 }

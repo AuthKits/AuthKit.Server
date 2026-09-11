@@ -1,5 +1,7 @@
 namespace Host.ServiceDiscovery;
 
+using System.Reflection;
+
 /// <summary>
 /// Filters types during service discovery for automatic DI registration.
 /// </summary>
@@ -88,11 +90,17 @@ public static class ServiceDiscoveryFilter
         return parts.Length > 1 ? parts[1] : "Global";
     }
 
+    private static bool IsRecord(Type type)
+        => type.GetMethod(
+               "<Clone>$",
+               BindingFlags.Public | BindingFlags.Instance) is not null;
+
     /// <summary>
     /// Applies <see cref="ServiceDiscoveryOptions"/> rules to decide inclusion.
     /// </summary>
     private static bool ShouldInclude(Type type, string ns, string layer, ServiceDiscoveryOptions opts)
-        => !(opts.SkipInterfaces && type.IsInterface)
+        => !IsRecord(type)
+           && !(opts.SkipInterfaces && type.IsInterface)
            && !(opts.SkipExceptions && typeof(Exception).IsAssignableFrom(type))
            && !opts.ExcludedTypes.Contains(type)
            && !opts.ExcludedNamespaces.Any(ns.Contains)
