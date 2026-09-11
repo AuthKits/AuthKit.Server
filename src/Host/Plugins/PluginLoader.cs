@@ -75,7 +75,7 @@ public static class PluginLoader
         foreach (var pluginDir in Directory.GetDirectories(pluginsRootPath))
         {
             var pluginName = Path.GetFileName(pluginDir);
-            var entryDllPath = Path.Combine(pluginDir, $"{pluginName}.dll");
+            var entryDllPath = Path.Join(pluginDir, $"{pluginName}.dll");
 
             if (!File.Exists(entryDllPath))
             {
