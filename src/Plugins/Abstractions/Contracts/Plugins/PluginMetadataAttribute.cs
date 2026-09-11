@@ -1,7 +1,7 @@
 namespace AuthKit.Plugins.Abstractions.Contracts.Plugins;
 
 /// <summary>
-/// Atrubut metadanych pluginu AuthKit.
+/// Atrybut metadanych pluginu AuthKit.
 /// </summary>
 [AttributeUsage(AttributeTargets.Class)]
 public class PluginMetadataAttribute(

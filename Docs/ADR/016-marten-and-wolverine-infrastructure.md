@@ -48,4 +48,4 @@ Plugins and Core share one persistence and messaging model, which keeps handlers
 - [ADR-011](./011-keystore-persisted-as-singleton-marten-document.md) - keystore stored in Marten
 - [ADR-012](./012-token-key-bindings-persisted-in-marten.md) - bindings stored in Marten
 
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./015-keycloak-external-jwt-authority.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./015-keycloak-external-jwt-authority.md) | [Next](./017-api-key-credential-extraction-strategies.md)
