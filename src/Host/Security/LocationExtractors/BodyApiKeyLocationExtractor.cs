@@ -62,9 +62,13 @@ public sealed class BodyApiKeyLocationExtractor(
 
         if (parser is null)
         {
+            var sanitizedContentType = (context.Request.ContentType ?? string.Empty)
+                .Replace("\r", string.Empty)
+                .Replace("\n", string.Empty);
+
             logger.LogDebug("Skipping Body credential extraction for scheme {Scheme}: unsupported content type {ContentType}",
                 scheme.Name,
-                context.Request.ContentType);
+                sanitizedContentType);
 
             return null;
         }
