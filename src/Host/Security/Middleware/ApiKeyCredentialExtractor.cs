@@ -57,7 +57,7 @@ public sealed class ApiKeyCredentialExtractor(
         {
             apiKey = await locationRegistry.Resolve(scheme.In).ExtractAsync(context, scheme);
         }
-        catch (Exception ex)
+        catch (FormatException ex)
         {
             logger.LogWarning(ex, "Failed to extract API key from {Location} for scheme {Scheme}", scheme.In, scheme.Name);
             WriteUnauthorized(context);
