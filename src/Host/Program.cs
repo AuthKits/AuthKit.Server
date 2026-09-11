@@ -11,13 +11,15 @@ var pluginsPath = builder.Configuration["AuthKit:PluginsPath"]
 var pluginLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("PluginLoader");
 var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger);
 
+var restfulLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("RestfulConfiguration");
+
 // === Core Config ===
 builder.Services.AddSingleton(plugins);
 builder.Services.AddAuthKitCore();
 
 builder.Services.ConfigureApp(builder.Configuration, plugins)
     .AddGrpcServices()
-    .AddRestfulServices(plugins)
+    .AddRestfulServices(plugins, builder.Configuration, restfulLogger)
     .AddKeycloakServices();
 
 foreach (var lp in plugins)

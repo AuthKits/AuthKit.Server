@@ -1,5 +1,6 @@
 using System.Runtime.Loader;
 using AuthKit.Plugins.Abstractions;
+using Microsoft.Extensions.Logging;
 
 namespace Host.Plugins;
 
@@ -84,6 +85,10 @@ public static class PluginLoader
                 }
 
                 var plugin = (IAuthKitPlugin)Activator.CreateInstance(pluginType)!;
+
+                // Validate plugin contract against host capabilities
+                PluginContractValidator.Validate(plugin, logger);
+
                 loaded.Add(new LoadedPlugin(plugin, assembly, pluginDir));
 
                 logger.LogInformation("Loaded plugin '{Name}' v{Version} from {Dir}", plugin.Name, plugin.Version, pluginDir);
