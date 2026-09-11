@@ -36,6 +36,7 @@ public static class SecurityServiceCollectionExtensions
     {
         services.Configure(configure ?? (_ => { }));
 
+        services.AddSingleton<ISecuritySchemeRegistry, SecuritySchemeRegistry>();
         services.AddSingleton<IApiKeyLocationExtractorRegistry, ApiKeyLocationExtractorRegistry>();
 
         services.AddSingleton<IApiKeyLocationExtractor, HeaderApiKeyLocationExtractor>();

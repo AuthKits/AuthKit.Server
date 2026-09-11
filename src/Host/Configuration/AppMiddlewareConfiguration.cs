@@ -1,5 +1,6 @@
 using Host.Plugins;
 using Host.Restful.Middleware.Exceptions;
+using Host.Security.Middleware;
 
 namespace Host.Configuration;
 
@@ -42,6 +43,8 @@ public static class AppMiddlewareConfiguration
             if (plugin.Plugin.MiddlewareType is { } middlewareType)
                 app.UseMiddleware(middlewareType);
         }
+
+        app.UseMiddleware<ApiKeyCredentialExtractor>();
 
         app.UseAuthentication();
         app.UseAuthorization();

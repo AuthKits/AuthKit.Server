@@ -1,31 +1,34 @@
 using System.Security.Claims;
-using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Security.LocationExtractors;
 using Host.Security.Validation;
+using Microsoft.AspNetCore.Http.Features;
 
 namespace Host.Security.Middleware;
 
 /// <summary>
-/// Pipeline middleware that authenticates requests using an API key described by the
-/// request's <see cref="AuthKitSecuritySchemeDescriptor"/>.
+/// Pipeline middleware that authenticates requests using the API key scheme
+/// declared on the current request's endpoint.
 /// </summary>
 /// <remarks>
 /// <para>
-/// The middleware resolves the correct credential location strategy from
-/// <see cref="IApiKeyLocationExtractorRegistry"/>, extracts the API key, and validates
-/// it through <see cref="IApiKeyValidator"/>. On success the principal's claims are
-/// attached to <see cref="HttpContext.User"/> as an authenticated identity.
+/// The scheme is resolved per request from endpoint metadata
+/// (<see cref="SecuritySchemeAttribute"/>) and the host's
+/// <see cref="ISecuritySchemeRegistry"/> rather than from an ambient descriptor
+/// registered in the container. Endpoints that do not declare a scheme are
+/// passed through untouched.
 /// </para>
 /// <para>
-/// When no scheme is declared for the request, or when extraction or validation does
-/// not produce a principal, the pipeline continues to the next middleware so downstream
-/// authentication can decide how to handle the request.
+/// Authentication is fail-closed: a request that carries a credential for a
+/// declared scheme and cannot be authenticated is rejected with
+/// <c>401 Unauthorized</c>. Only requests that carry no credential at all are
+/// passed through so downstream middleware can decide how to handle them.
 /// </para>
 /// </remarks>
 public sealed class ApiKeyCredentialExtractor(
     RequestDelegate next,
-    IApiKeyLocationExtractorRegistry registry,
+    ISecuritySchemeRegistry registry,
+    IApiKeyLocationExtractorRegistry locationRegistry,
     ILogger<ApiKeyCredentialExtractor> logger)
 {
     private const string AuthenticationType = "ApiKey";
@@ -37,41 +40,76 @@ public sealed class ApiKeyCredentialExtractor(
     /// <param name="validator">The validator used to authenticate the extracted API key.</param>
     public async Task InvokeAsync(HttpContext context, IApiKeyValidator validator)
     {
-        var scheme = context.RequestServices.GetService<AuthKitSecuritySchemeDescriptor>();
+        var scheme = ResolveScheme(context);
         if (scheme is null)
         {
             await next(context);
             return;
         }
 
-        string? apiKey = null;
-
+        string? apiKey;
         try
         {
-            apiKey = await registry.Resolve(scheme.In).ExtractAsync(context, scheme);
+            apiKey = await locationRegistry.Resolve(scheme.In).ExtractAsync(context, scheme);
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "Failed to extract API key from {Location} for scheme {Scheme}", scheme.In, scheme.Name);
+            WriteUnauthorized(context);
+            return;
         }
 
-        if (!string.IsNullOrEmpty(apiKey))
+        if (string.IsNullOrEmpty(apiKey))
         {
-            try
+            await next(context);
+            return;
+        }
+
+        try
+        {
+            var principal = await validator.ValidateAsync(apiKey);
+            if (principal is null)
             {
-                var principal = await validator.ValidateAsync(apiKey);
-                if (principal is not null)
-                {
-                    context.User.AddIdentity(new ClaimsIdentity(principal.Claims, AuthenticationType));
-                    logger.LogDebug("API key validated for {Subject} via scheme {Scheme}", principal.Subject, scheme.Name);
-                }
+                logger.LogWarning("API key rejected by validator for scheme {Scheme}", scheme.Name);
+                WriteUnauthorized(context);
+                return;
             }
-            catch (Exception ex)
-            {
-                logger.LogWarning(ex, "Failed to validate API key extracted from {Location} for scheme {Scheme}", scheme.In, scheme.Name);
-            }
+
+            var identity = new ClaimsIdentity(principal.Claims, AuthenticationType);
+            context.User = new ClaimsPrincipal(identity);
+            logger.LogDebug("API key validated for {Subject} via scheme {Scheme}", principal.Subject, scheme.Name);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "Failed to validate API key for scheme {Scheme}", scheme.Name);
+            WriteUnauthorized(context);
+            return;
         }
 
         await next(context);
+    }
+
+    private AuthKitSecuritySchemeDescriptor? ResolveScheme(HttpContext context)
+    {
+        var schemeName = context.Features.Get<IEndpointFeature>()?.Endpoint
+            ?.Metadata.GetMetadata<SecuritySchemeAttribute>()?.SchemeName;
+
+        if (string.IsNullOrEmpty(schemeName))
+            return null;
+
+        if (!registry.TryGet(schemeName, out var scheme))
+        {
+            throw new InvalidOperationException(
+                $"Endpoint declares security scheme '{schemeName}', but no enabled plugin contributes a scheme " +
+                $"with that name. The request cannot be authenticated.");
+        }
+
+        return scheme;
+    }
+
+    private static void WriteUnauthorized(HttpContext context)
+    {
+        context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+        context.Response.Headers.WWWAuthenticate = "ApiKey";
     }
 }

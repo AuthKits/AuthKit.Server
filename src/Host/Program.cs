@@ -1,6 +1,7 @@
 using Host.Configuration;
 using Host.Plugins;
 using Host.Cli;
+using Host.Security;
 using AuthKit.Plugins.Abstractions;
 using System.Reflection;
 using AuthKit.Plugins.Abstractions.Models;
@@ -27,6 +28,7 @@ builder.Services.AddAuthKitCore();
 builder.Services.ConfigureApp(builder.Configuration, plugins)
     .AddGrpcServices()
     .AddRestfulServices(plugins, builder.Configuration, restfulLogger)
+    .AddApiKeyCredentialExtraction()
     .AddKeycloakServices();
 
 foreach (var lp in plugins)
