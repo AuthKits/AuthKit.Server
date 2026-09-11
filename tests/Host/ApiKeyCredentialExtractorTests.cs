@@ -6,6 +6,7 @@ using Host.Security.Middleware;
 using Host.Security.Validation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 
@@ -82,6 +83,14 @@ public class ApiKeyCredentialExtractorTests
         return context;
     }
 
+    private static void WithValidator(HttpContext context, IApiKeyValidator validator)
+    {
+        var serviceProvider = new ServiceCollection()
+            .AddSingleton(validator)
+            .BuildServiceProvider();
+        context.RequestServices = serviceProvider;
+    }
+
     private static ApiKeyCredentialExtractor CreateMiddleware(
         ISecuritySchemeRegistry registry,
         IApiKeyLocationExtractorRegistry locationRegistry,
@@ -98,9 +107,8 @@ public class ApiKeyCredentialExtractorTests
             state.Next);
 
         var context = CreateContext(schemeName: null);
-        await middleware.InvokeAsync(
-            context,
-            new FakeValidator(new ApiKeyPrincipal { Subject = "s1" }));
+        WithValidator(context, new FakeValidator(new ApiKeyPrincipal { Subject = "s1" }));
+        await middleware.InvokeAsync(context);
 
         Assert.True(state.NextCalled);
         Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
@@ -117,7 +125,8 @@ public class ApiKeyCredentialExtractorTests
 
         var context = CreateContext();
         var principal = new ApiKeyPrincipal { Subject = "s1" };
-        await middleware.InvokeAsync(context, new FakeValidator(principal));
+        WithValidator(context, new FakeValidator(principal));
+        await middleware.InvokeAsync(context);
 
         Assert.True(state.NextCalled);
         Assert.Equal(StatusCodes.Status200OK, context.Response.StatusCode);
@@ -135,9 +144,8 @@ public class ApiKeyCredentialExtractorTests
             state.Next);
 
         var context = CreateContext();
-        await middleware.InvokeAsync(
-            context,
-            new FakeValidator(new ApiKeyPrincipal { Subject = "s1" }));
+        WithValidator(context, new FakeValidator(new ApiKeyPrincipal { Subject = "s1" }));
+        await middleware.InvokeAsync(context);
 
         Assert.True(state.NextCalled);
         Assert.NotEqual(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
@@ -153,11 +161,29 @@ public class ApiKeyCredentialExtractorTests
             state.Next);
 
         var context = CreateContext();
-        await middleware.InvokeAsync(context, new FakeValidator(null));
+        WithValidator(context, new FakeValidator(null));
+        await middleware.InvokeAsync(context);
 
         Assert.False(state.NextCalled);
         Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
         Assert.Equal("ApiKey", context.Response.Headers.WWWAuthenticate);
+    }
+
+    [Fact]
+    public async Task NoValidatorRegistered_FailsClosedWith401()
+    {
+        var state = new PipelineProbe();
+        var middleware = CreateMiddleware(
+            new FakeRegistry(),
+            new FakeLocationRegistry(new FakeExtractor("secret")),
+            state.Next);
+
+        var context = CreateContext();
+        context.RequestServices = new ServiceCollection().BuildServiceProvider();
+        await middleware.InvokeAsync(context);
+
+        Assert.False(state.NextCalled);
+        Assert.Equal(StatusCodes.Status401Unauthorized, context.Response.StatusCode);
     }
 
     [Fact]
@@ -170,11 +196,9 @@ public class ApiKeyCredentialExtractorTests
             state.Next);
 
         var context = CreateContext(schemeName: "UnknownScheme");
+        WithValidator(context, new FakeValidator(new ApiKeyPrincipal { Subject = "s1" }));
 
-        await Assert.ThrowsAsync<InvalidOperationException>(() =>
-            middleware.InvokeAsync(
-                context,
-                new FakeValidator(new ApiKeyPrincipal { Subject = "s1" })));
+        await Assert.ThrowsAsync<InvalidOperationException>(() => middleware.InvokeAsync(context));
 
         Assert.False(state.NextCalled);
     }

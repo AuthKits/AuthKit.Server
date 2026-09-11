@@ -24,6 +24,12 @@ namespace Host.Security.Middleware;
 /// <c>401 Unauthorized</c>. Only requests that carry no credential at all are
 /// passed through so downstream middleware can decide how to handle them.
 /// </para>
+/// <para>
+/// An <see cref="IApiKeyValidator"/> is resolved lazily from the request's
+/// service provider, and only when a credential is actually present. A missing
+/// validator registration is treated as a host configuration error and the
+/// request fails closed with <c>401 Unauthorized</c>.
+/// </para>
 /// </remarks>
 public sealed class ApiKeyCredentialExtractor(
     RequestDelegate next,
@@ -37,8 +43,7 @@ public sealed class ApiKeyCredentialExtractor(
     /// Extracts and validates the API key declared for the current request.
     /// </summary>
     /// <param name="context">The current <see cref="HttpContext"/>.</param>
-    /// <param name="validator">The validator used to authenticate the extracted API key.</param>
-    public async Task InvokeAsync(HttpContext context, IApiKeyValidator validator)
+    public async Task InvokeAsync(HttpContext context)
     {
         var scheme = ResolveScheme(context);
         if (scheme is null)
@@ -62,6 +67,17 @@ public sealed class ApiKeyCredentialExtractor(
         if (string.IsNullOrEmpty(apiKey))
         {
             await next(context);
+            return;
+        }
+
+        var validator = context.RequestServices.GetService<IApiKeyValidator>();
+        if (validator is null)
+        {
+            logger.LogError(
+                "Scheme {Scheme} is declared on an endpoint, but no IApiKeyValidator is registered. " +
+                "Register a validator during host or plugin configuration.",
+                scheme.Name);
+            WriteUnauthorized(context);
             return;
         }
 
