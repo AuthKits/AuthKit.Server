@@ -92,8 +92,7 @@ public static class KeycloakConfiguration
 
         services.AddAuthorization(options =>
         {
-            foreach (var plugin in plugins.OrderBy(plugin => plugin.Plugin.Id, StringComparer.Ordinal))
-                plugin.Plugin.ConfigureAuthorization(options);
+            AuthorizationPolicyCollisionGuard.Configure(options, plugins);
         });
     }
 
