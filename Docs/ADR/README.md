@@ -66,6 +66,15 @@ The table below shows the architecture areas and their current scope.
 | [ADR-014](./014-error-responses-via-middleware.md) | Render HTTP Errors As RFC 7807 Problem Details Via Middleware | Host | accepted | 2026-08-26 |
 | [ADR-015](./015-keycloak-external-jwt-authority.md) | Use Keycloak As The External JWT Authority | Host | accepted | 2026-08-26 |
 | [ADR-016](./016-marten-and-wolverine-infrastructure.md) | Use Marten And Wolverine As Host Infrastructure | Host | accepted | 2026-08-26 |
+| [ADR-017](./017-Plugin-Contract-and-Dynamic-Loading-Architecture.md) | Define The Plugin Contract And Dynamic Loading Architecture | Plugins | accepted | 2026-09-11 |
+| [ADR-017](./017-api-key-credential-extraction-strategies.md) | Define API Key Credential Extraction Strategies | Host | accepted | 2026-09-11 |
+| [ADR-018](./018-security-scheme-contract-explicit-handling.md) | Handle Security Scheme Contract Values Explicitly | Plugins | accepted | 2026-09-11 |
+| [ADR-019](./019-plugin-metadata-attribute.md) | Declare Plugin Identity Through The PluginMetadata Attribute | Plugins | accepted | 2026-09-11 |
+| [ADR-020](./020-devtools-plugin.md) | Host Developer Tools Through A Dedicated DevTools Plugin | Plugins | accepted | 2026-09-11 |
+| [ADR-021](./021-swagger-serving-via-reflection.md) | Serve Swagger Through Reflection-Based SwaggerHost In DevTools | Plugins | accepted | 2026-09-11 |
+| [ADR-022](./022-plugin-configuration-context-and-builder.md) | Extend Plugin Configuration With The Host Builder And Scoped Context | Plugins | accepted | 2026-09-12 |
+| [ADR-023](./023-plugin-application-pipeline-hooks.md) | Integrate Plugin Endpoints And Middleware Through Explicit Host Pipeline Hooks | Plugins | accepted | 2026-09-12 |
+| [ADR-024](./024-plugin-lifecycle-and-hosted-services.md) | Bridge Plugin Lifecycle Hooks To The Standard .NET Host Lifecycle | Plugins | accepted | 2026-09-12 |
 
 ## Relationships Between Areas
 
