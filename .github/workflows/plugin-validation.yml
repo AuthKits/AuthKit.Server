@@ -42,6 +42,7 @@ jobs:
           mkdir -p "${{ env.PLUGINS_STAGING }}"
           for proj in $(find src/Plugins -name '*.csproj' \
               -not -path '*/Abstractions/*' \
+              -not -path '*/Integrations/*' \
               -not -path '*/obj/*' \
               -not -path '*/bin/*'); do
             name=$(basename "$proj" .csproj)
