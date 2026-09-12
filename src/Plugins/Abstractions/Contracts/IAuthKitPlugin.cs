@@ -149,7 +149,7 @@ public interface IAuthKitPlugin
     /// <see cref="PluginExtensions.Supports(AuthKit.Plugins.Abstractions.Contracts.IAuthKitPlugin,string)"/> extension method.
     /// Example: <c>plugin.Supports("auth")</c>.
     /// </remarks>
-    IReadOnlySet<string> Capabilities => _capabilities ??=
+    IReadOnlySet<string> Capabilities =>
         System.Collections.Immutable.ImmutableHashSet.CreateRange(StringComparer.OrdinalIgnoreCase, Metadata.Capabilities);
 
     /// <summary>
@@ -157,12 +157,6 @@ public interface IAuthKitPlugin
     /// </summary>
     PluginMetadataAttribute Metadata => GetType().GetCustomAttribute<PluginMetadataAttribute>()
         ?? throw new InvalidOperationException($"Plugin {GetType().Name} is missing [PluginMetadata] attribute.");
-
-    // Shared immutable empty capabilities set with OrdinalIgnoreCase comparer
-    private static readonly IReadOnlySet<string> EmptyCapabilities =
-        System.Collections.Immutable.ImmutableHashSet.Create<string>(StringComparer.OrdinalIgnoreCase);
-
-    private static IReadOnlySet<string>? _capabilities;
 
     /// <summary>
     /// Registers the plugin's services in the host dependency injection container.
