@@ -39,9 +39,9 @@ tasks:
       - echo "Manifest generated at {{.MANIFEST_OUTPUT}}"
 
   build-manifest-generator:
-    desc: Builds the AuthKit.ManifestGenerator tool
+    desc: Restores and builds the AuthKit.ManifestGenerator tool
     cmds:
-      - cd {{.MANIFEST_GENERATOR}} && dotnet build --configuration {{.CONFIGURATION}} --no-restore
+      - cd {{.MANIFEST_GENERATOR}} && dotnet build --configuration {{.CONFIGURATION}}
 
   validate:
     desc: Cleans and builds the project
