@@ -8,6 +8,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using System.Reflection;
 
 namespace AuthKit.Plugins.Abstractions.Contracts;
@@ -342,6 +344,41 @@ public interface IAuthKitPlugin
     /// <returns>readonly dictionary keyed by the security scheme name. </returns>
     IReadOnlyDictionary<string, AuthKitSecuritySchemeDescriptor> GetSecuritySchemes() =>
         new Dictionary<string, AuthKitSecuritySchemeDescriptor>();
+
+    /// <summary>
+    /// Configures authentication schemes on the host-owned authentication builder.
+    /// </summary>
+    /// <param name="builder">The actual host authentication builder.</param>
+    /// <remarks>
+    /// This optional hook does not change the host default scheme. Scheme names
+    /// are globally significant and collisions are subject to ASP.NET Core's
+    /// explicit configuration behavior.
+    /// </remarks>
+    void ConfigureAuthentication(AuthenticationBuilder builder)
+    {
+    }
+
+    /// <summary>
+    /// Configures authorization policies on the host-owned authorization options.
+    /// </summary>
+    /// <param name="options">The actual host authorization options.</param>
+    /// <remarks>
+    /// Plugins should use globally unique, preferably namespaced policy names.
+    /// Existing default and fallback policies are not replaced by the host.
+    /// </remarks>
+    void ConfigureAuthorization(AuthorizationOptions options)
+    {
+    }
+
+    /// <summary>
+    /// Binds strongly typed plugin options from <c>Plugins:{Name}</c> using the standard options DI infrastructure.
+    /// </summary>
+    /// <typeparam name="TOptions">The plugin options type.</typeparam>
+    /// <param name="services">The host service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    void BindConfiguration<TOptions>(IServiceCollection services, IConfiguration configuration)
+        where TOptions : class =>
+        services.Configure<TOptions>(configuration.GetSection($"Plugins:{Name}"));
 
     /// <summary>
     /// Initializes plugin runtime resources before the host is considered started.

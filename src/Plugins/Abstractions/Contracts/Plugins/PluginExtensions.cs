@@ -1,4 +1,6 @@
 using AuthKit.Plugins.Abstractions.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace AuthKit.Plugins.Abstractions.Contracts.Plugins;
 
@@ -7,6 +9,26 @@ namespace AuthKit.Plugins.Abstractions.Contracts.Plugins;
 /// </summary>
 public static class PluginExtensions
 {
+    /// <summary>
+    /// Binds strongly typed options from the plugin's standard configuration section.
+    /// </summary>
+    /// <typeparam name="TOptions">The plugin options type.</typeparam>
+    /// <param name="plugin">The plugin whose name identifies the section.</param>
+    /// <param name="services">The host service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    public static void BindConfiguration<TOptions>(
+        this IAuthKitPlugin plugin,
+        IServiceCollection services,
+        IConfiguration configuration)
+        where TOptions : class
+    {
+        ArgumentNullException.ThrowIfNull(plugin);
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(configuration);
+
+        services.Configure<TOptions>(configuration.GetSection($"Plugins:{plugin.Name}"));
+    }
+
     /// <summary>
     /// Checks if the plugin supports the specified capability.
     /// </summary>
