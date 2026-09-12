@@ -1,5 +1,6 @@
 using System.Reflection;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 
 namespace Host.Plugins;
 
@@ -40,7 +41,7 @@ internal static class PluginConfigurationInvoker
                 new AuthKitPluginContext(
                     plugin.Id,
                     plugin.Name,
-                    GetPluginConfiguration(configuration, plugin),
+                    plugin.GetPluginConfiguration(configuration),
                     configuration));
             return;
         }
@@ -73,27 +74,5 @@ internal static class PluginConfigurationInvoker
             modifiers: null);
 
         return method is not null && method.DeclaringType != typeof(IAuthKitPlugin);
-    }
-
-    /// <summary>
-    /// Resolves the plugin scoped configuration section passed through
-    /// <see cref="AuthKitPluginContext"/>.
-    /// </summary>
-    /// <param name="configuration">The application configuration.</param>
-    /// <param name="plugin">The plugin being configured.</param>
-    /// <returns>
-    /// The Plugins configuration section keyed by the plugin identifier when
-    /// present otherwise, the section keyed by the plugin name.
-    /// </returns>
-    private static IConfiguration GetPluginConfiguration(
-        IConfiguration configuration,
-        IAuthKitPlugin plugin)
-    {
-        var plugins = configuration.GetSection("Plugins");
-        var byId = plugins.GetSection(plugin.Id);
-
-        return byId.GetChildren().Any()
-            ? byId
-            : plugins.GetSection(plugin.Name);
     }
 }
