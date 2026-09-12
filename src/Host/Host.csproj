@@ -33,5 +33,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Core\Core.csproj" />
     <ProjectReference Include="..\Plugins\Abstractions\AuthKit.Plugins.Abstractions.csproj" />
+    <ProjectReference Include="..\Plugins\Integrations\AuthKit.Plugins.Integrations.csproj" />
   </ItemGroup>
 </Project>
