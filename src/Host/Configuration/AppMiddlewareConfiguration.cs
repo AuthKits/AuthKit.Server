@@ -1,6 +1,8 @@
 using Host.Plugins;
 using Host.Restful.Middleware.Exceptions;
 using Host.Security.Middleware;
+using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts;
 
 namespace Host.Configuration;
 
@@ -14,9 +16,11 @@ namespace Host.Configuration;
 /// middleware, and authentication and authorization.
 /// </para>
 /// <para>
-/// Plugin middleware is inserted after the host exception handling middleware
-/// and before authentication so plugins can participate in request processing
-/// before the authenticated endpoint pipeline is reached.
+/// New pipeline hooks are inserted at their strongly typed
+/// <see cref="PluginPipelinePosition"/>. Plugins at the same position are
+/// ordered by stable plugin ID. Legacy <see cref="IAuthKitPlugin.MiddlewareType"/>
+/// middleware remains in its original slot unless the plugin opts into a new
+/// application or pipeline hook.
 /// </para>
 /// </remarks>
 public static class AppMiddlewareConfiguration
@@ -26,28 +30,32 @@ public static class AppMiddlewareConfiguration
     /// </summary>
     /// <param name="plugins">
     /// The plugins loaded during application startup. Plugins may optionally
-    /// contribute middleware through their configured middleware type.
+    /// contribute middleware, application hooks, or positioned pipeline hooks.
     /// </param>
     /// <returns>The configured <see cref="WebApplication"/> instance.</returns>
     public static WebApplication ConfigureMiddleware(
         this WebApplication app,
         IReadOnlyList<LoadedPlugin> plugins)
     {
+        PluginApplicationConfiguration.ConfigureApplications(app, plugins);
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeRouting);
         app.UseRouting();
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.AfterRouting);
 
         app.UseMiddleware<ValidationExceptionMiddleware>();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        foreach (var plugin in plugins)
-        {
-            if (plugin.Plugin.MiddlewareType is { } middlewareType)
-                app.UseMiddleware(middlewareType);
-        }
+        PluginApplicationConfiguration.ConfigureLegacyMiddleware(app, plugins);
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeAuthentication);
 
         app.UseMiddleware<ApiKeyCredentialExtractor>();
 
         app.UseAuthentication();
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.AfterAuthentication);
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeAuthorization);
         app.UseAuthorization();
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.AfterAuthorization);
+        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeEndpoints);
 
         return app;
     }

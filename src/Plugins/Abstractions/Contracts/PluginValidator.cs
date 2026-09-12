@@ -77,7 +77,7 @@ public static class PluginValidator
             }
         }
             
-        // Check for self-dependency
+        // Check for self dependency
         if (dependsOn.Contains(pluginId, StringComparer.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("Plugin cannot depend on itself.");
