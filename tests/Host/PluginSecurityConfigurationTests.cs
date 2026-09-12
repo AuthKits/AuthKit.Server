@@ -33,6 +33,42 @@ public sealed class PluginSecurityConfigurationTests
         Assert.Equal("Bearer", (await schemes.GetDefaultAuthenticateSchemeAsync())?.Name);
     }
 
+    [Fact]
+    public void DuplicateAuthenticationScheme_Collision_ThrowsInvalidOperationException()
+    {
+        var services = new ServiceCollection();
+        services.AddKeycloakServices(
+        [
+            new LoadedPlugin(new DuplicateSchemePlugin(), typeof(DuplicateSchemePlugin).Assembly, "dup-scheme-a"),
+            new LoadedPlugin(new DuplicateSchemePlugin(), typeof(DuplicateSchemePlugin).Assembly, "dup-scheme-b")
+        ]);
+
+        using var provider = services.BuildServiceProvider();
+        var ex = Record.Exception(() => provider.GetRequiredService<IAuthenticationSchemeProvider>());
+
+        var ioe = Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("DuplicatePluginScheme", ioe.Message);
+    }
+
+    [Fact]
+    public void DuplicateAuthorizationPolicy_Collision_ThrowsInvalidOperationExceptionWithBothOwners()
+    {
+        var services = new ServiceCollection();
+        services.AddKeycloakServices(
+        [
+            new LoadedPlugin(new FirstPolicyOwner(), typeof(FirstPolicyOwner).Assembly, "owner-a"),
+            new LoadedPlugin(new SecondPolicyOwner(), typeof(SecondPolicyOwner).Assembly, "owner-b")
+        ]);
+
+        using var provider = services.BuildServiceProvider();
+        var ex = Record.Exception(() => provider.GetRequiredService<IAuthorizationPolicyProvider>());
+
+        var ioe = Assert.IsType<InvalidOperationException>(ex);
+        Assert.Contains("plugin.read", ioe.Message);
+        Assert.Contains("owner-a", ioe.Message);
+        Assert.Contains("owner-b", ioe.Message);
+    }
+
     [PluginMetadata("security-plugin", "1.0.0", [], [], [], name: "Security Plugin", description: "Security test")]
     private sealed class SecurityPlugin : IAuthKitPlugin
     {
@@ -40,6 +76,28 @@ public sealed class PluginSecurityConfigurationTests
             builder.AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
                 "PluginScheme", _ => { });
 
+        public void ConfigureAuthorization(AuthorizationOptions options) =>
+            options.AddPolicy("plugin.read", policy => policy.RequireAuthenticatedUser());
+    }
+
+    [PluginMetadata("dup-scheme", "1.0.0", [], [], [], description: "Duplicate scheme")]
+    private sealed class DuplicateSchemePlugin : IAuthKitPlugin
+    {
+        public void ConfigureAuthentication(AuthenticationBuilder builder) =>
+            builder.AddScheme<AuthenticationSchemeOptions, TestAuthenticationHandler>(
+                "DuplicatePluginScheme", _ => { });
+    }
+
+    [PluginMetadata("owner-a", "1.0.0", [], [], [], description: "Policy owner A")]
+    private sealed class FirstPolicyOwner : IAuthKitPlugin
+    {
+        public void ConfigureAuthorization(AuthorizationOptions options) =>
+            options.AddPolicy("plugin.read", policy => policy.RequireAuthenticatedUser());
+    }
+
+    [PluginMetadata("owner-b", "1.0.0", [], [], [], description: "Policy owner B")]
+    private sealed class SecondPolicyOwner : IAuthKitPlugin
+    {
         public void ConfigureAuthorization(AuthorizationOptions options) =>
             options.AddPolicy("plugin.read", policy => policy.RequireAuthenticatedUser());
     }
