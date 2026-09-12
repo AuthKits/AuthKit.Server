@@ -6,19 +6,19 @@ on:
     tags: ['v*']
     paths:
       - 'src/Plugins/**'
-      - 'tools/PluginContractValidator/**'
+      - 'tools/AuthKit.PluginContractValidator/**'
       - '.github/workflows/plugin-validation.yml'
   pull_request:
     branches: [main, development]
     paths:
       - 'src/Plugins/**'
-      - 'tools/PluginContractValidator/**'
+      - 'tools/AuthKit.PluginContractValidator/**'
       - '.github/workflows/plugin-validation.yml'
   workflow_dispatch:
 
 env:
   DOTNET_VERSION: '10.0.x'
-  VALIDATOR_PROJECT: 'tools/PluginContractValidator/PluginContractValidator.csproj'
+  VALIDATOR_PROJECT: 'tools/AuthKit.PluginContractValidator/AuthKit.PluginContractValidator.csproj'
   PLUGINS_STAGING: 'out/plugins'
 
 permissions:
@@ -54,5 +54,5 @@ jobs:
 
       - name: Run contract validation
         run: |
-          VALIDATOR_DLL="tools/PluginContractValidator/bin/Release/net10.0/PluginContractValidator.dll"
+          VALIDATOR_DLL="tools/AuthKit.PluginContractValidator/bin/Release/net10.0/AuthKit.PluginContractValidator.dll"
           dotnet "$VALIDATOR_DLL" "${{ github.workspace }}/${{ env.PLUGINS_STAGING }}"
