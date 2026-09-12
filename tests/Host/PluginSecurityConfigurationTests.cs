@@ -69,6 +69,38 @@ public sealed class PluginSecurityConfigurationTests
         Assert.Contains("owner-b", ioe.Message);
     }
 
+    [Fact]
+    public void BuildingProviderInvokesEachPluginHookExactlyOnce()
+    {
+        var services = new ServiceCollection();
+        var counting = new CountingPlugin();
+        services.AddKeycloakServices(
+            new[] { new LoadedPlugin(counting, typeof(CountingPlugin).Assembly, "counting.plugin") });
+
+        using var provider = services.BuildServiceProvider();
+        _ = provider.GetRequiredService<IAuthenticationSchemeProvider>();
+        _ = provider.GetRequiredService<IAuthorizationPolicyProvider>();
+
+        Assert.Equal(1, counting.AuthenticationCalls);
+        Assert.Equal(1, counting.AuthorizationCalls);
+    }
+
+    [Fact]
+    public async Task HostSecurityDefaultsRemainUnchanged()
+    {
+        var services = new ServiceCollection();
+        services.AddKeycloakServices(
+            new[] { new LoadedPlugin(new SecurityPlugin(), typeof(SecurityPlugin).Assembly, "security.plugin") });
+
+        using var provider = services.BuildServiceProvider();
+        var schemes = provider.GetRequiredService<IAuthenticationSchemeProvider>();
+        var options = provider.GetRequiredService<IOptions<AuthorizationOptions>>().Value;
+
+        Assert.Equal("Bearer", (await schemes.GetDefaultAuthenticateSchemeAsync())?.Name);
+        Assert.NotNull(options.DefaultPolicy);
+        Assert.Null(options.FallbackPolicy);
+    }
+
     [PluginMetadata("security-plugin", "1.0.0", [], [], [], name: "Security Plugin", description: "Security test")]
     private sealed class SecurityPlugin : IAuthKitPlugin
     {
@@ -100,6 +132,18 @@ public sealed class PluginSecurityConfigurationTests
     {
         public void ConfigureAuthorization(AuthorizationOptions options) =>
             options.AddPolicy("plugin.read", policy => policy.RequireAuthenticatedUser());
+    }
+
+    [PluginMetadata("counting.plugin", "1.0.0", [], [], [], description: "Counting")]
+    private sealed class CountingPlugin : IAuthKitPlugin
+    {
+        public int AuthenticationCalls { get; private set; }
+
+        public int AuthorizationCalls { get; private set; }
+
+        public void ConfigureAuthentication(AuthenticationBuilder builder) => AuthenticationCalls++;
+
+        public void ConfigureAuthorization(AuthorizationOptions options) => AuthorizationCalls++;
     }
 
     private sealed class TestAuthenticationHandler(
