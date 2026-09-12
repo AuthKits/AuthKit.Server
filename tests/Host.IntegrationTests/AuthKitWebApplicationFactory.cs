@@ -20,7 +20,7 @@ public sealed class AuthKitWebApplicationFactory : WebApplicationFactory<Program
     /// </summary>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
-        var pluginsPath = Path.Combine(AppContext.BaseDirectory, "plugins");
+        var pluginsPath = Path.Join(AppContext.BaseDirectory, "plugins");
 
         builder.UseSetting("AuthKit:PluginsPath", pluginsPath);
         builder.UseSetting("AuthKit:SkipStorageMigrationOnStartup", "true");
