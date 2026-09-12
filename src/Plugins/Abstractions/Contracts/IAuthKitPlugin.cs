@@ -1,9 +1,13 @@
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using AuthKit.Plugins.Abstractions.Models;
+using AuthKit.Plugins.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
 using System.Reflection;
 
 namespace AuthKit.Plugins.Abstractions.Contracts;
@@ -176,7 +180,37 @@ public interface IAuthKitPlugin
     /// </remarks>
     void ConfigureServices(
         IServiceCollection services,
-        IConfiguration configuration);
+        IConfiguration configuration) =>
+        throw new NotSupportedException(
+            $"Plugin '{GetType().Name}' must implement a supported ConfigureServices overload.");
+
+    /// <summary>
+    /// Configures plugin services using the host application builder.
+    /// </summary>
+    /// <param name="builder">The host application builder used by AuthKit.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <remarks>
+    /// This overload is optional. Its default implementation delegates to the
+    /// legacy service collection overload for existing plugins.
+    /// </remarks>
+    void ConfigureServices(
+        IHostApplicationBuilder builder,
+        IConfiguration configuration) =>
+        ConfigureServices(builder.Services, configuration);
+
+    /// <summary>
+    /// Configures plugin services with stable plugin context information.
+    /// </summary>
+    /// <param name="services">The service collection used by the host.</param>
+    /// <param name="context">The context for the plugin being configured.</param>
+    /// <remarks>
+    /// This overload is optional. Its default implementation delegates to the
+    /// legacy service collection overload for existing plugins.
+    /// </remarks>
+    void ConfigureServices(
+        IServiceCollection services,
+        AuthKitPluginContext context) =>
+        ConfigureServices(services, context.Configuration);
 
     /// <summary>
     /// Performs an optional health check for the plugin.
@@ -229,6 +263,50 @@ public interface IAuthKitPlugin
     Type? MiddlewareType => null;
 
     /// <summary>
+    /// Registers plugin-owned endpoints during host endpoint configuration.
+    /// </summary>
+    /// <param name="endpoints">The application's endpoint route builder.</param>
+    /// <remarks>
+    /// This optional hook runs after host services are configured and before
+    /// the application starts processing requests. Exceptions are propagated.
+    /// </remarks>
+    void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+    }
+
+    /// <summary>
+    /// Configures plugin application middleware on the actual host application.
+    /// </summary>
+    /// <param name="application">The application's live builder.</param>
+    /// <remarks>
+    /// When implemented, this hook takes precedence over <see cref="MiddlewareType"/>
+    /// to prevent accidental duplicate middleware registration.
+    /// </remarks>
+    void ConfigureApplication(IApplicationBuilder application)
+    {
+    }
+
+    /// <summary>
+    /// Gets the explicit pipeline position used by <see cref="ConfigurePipeline"/>.
+    /// </summary>
+    PluginPipelinePosition PipelinePosition => PluginPipelinePosition.BeforeAuthentication;
+
+    /// <summary>
+    /// Configures plugin middleware at the declared pipeline position.
+    /// </summary>
+    /// <param name="application">The application's live builder.</param>
+    /// <param name="position">The position currently being configured.</param>
+    /// <remarks>
+    /// The host invokes this hook once at <see cref="PipelinePosition"/>.
+    /// Plugins at the same position are ordered by stable plugin ID.
+    /// </remarks>
+    void ConfigurePipeline(
+        IApplicationBuilder application,
+        PluginPipelinePosition position)
+    {
+    }
+
+    /// <summary>
     /// Gets the minimum host version required to load this plugin.
     /// </summary>
     /// <remarks>
@@ -264,4 +342,31 @@ public interface IAuthKitPlugin
     /// <returns>readonly dictionary keyed by the security scheme name. </returns>
     IReadOnlyDictionary<string, AuthKitSecuritySchemeDescriptor> GetSecuritySchemes() =>
         new Dictionary<string, AuthKitSecuritySchemeDescriptor>();
+
+    /// <summary>
+    /// Initializes plugin runtime resources before the host is considered started.
+    /// </summary>
+    /// <param name="cancellationToken">The host startup cancellation token.</param>
+    /// <returns>A task that completes when initialization is complete.</returns>
+    Task OnStartingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>
+    /// Notifies the plugin after the host has started successfully.
+    /// </summary>
+    /// <param name="cancellationToken">The host lifecycle cancellation token.</param>
+    /// <returns>A task that completes when post-start work is complete.</returns>
+    Task OnStartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>
+    /// Releases plugin runtime resources during graceful host shutdown.
+    /// </summary>
+    /// <param name="cancellationToken">The host shutdown cancellation token.</param>
+    /// <returns>A task that completes when shutdown preparation is complete.</returns>
+    Task OnStoppingAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+
+    /// <summary>
+    /// Gets hosted services owned by this plugin.
+    /// </summary>
+    /// <returns>A non-null collection of services registered in the host DI container.</returns>
+    IReadOnlyList<IHostedService> GetHostedServices() => Array.Empty<IHostedService>();
 }

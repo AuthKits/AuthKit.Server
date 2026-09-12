@@ -32,7 +32,9 @@ builder.Services.ConfigureApp(builder.Configuration, plugins)
     .AddKeycloakServices();
 
 foreach (var lp in plugins)
-    lp.Plugin.ConfigureServices(builder.Services, builder.Configuration);
+    PluginConfigurationInvoker.Configure(lp.Plugin, builder, builder.Configuration);
+
+PluginHostedServiceRegistration.Register(builder.Services, plugins);
 
 builder.ConfigureWolverine(plugins);
 builder.Services.ConfigureMarten(builder.Configuration);
@@ -49,7 +51,18 @@ builder.Services.AddHostedService<ServerHost>();
 var app = builder.Build();
 
 app.ConfigureMiddleware(plugins)
-    .MapAppEndpoints()
+    .MapAppEndpoints(plugins)
     .MapGrpcEndpoints();
 
+PluginApplicationConfiguration.ConfigurePipeline(
+    app, plugins, PluginPipelinePosition.AfterEndpoints);
+
 app.Run();
+
+/// <summary>
+/// Exposes the application entry point to test hosts such as
+/// <c>WebApplicationFactory</c>.
+/// </summary>
+public partial class Program
+{
+}

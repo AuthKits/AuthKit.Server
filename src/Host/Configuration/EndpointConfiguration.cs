@@ -22,8 +22,15 @@ public static class EndpointConfiguration
     /// <summary>
     /// Maps AuthKit application endpoints to the specified web application.
     /// </summary>
+    /// <param name="app"></param>
+    /// <param name="plugins">
+    /// The plugins whose endpoint hooks are invoked after host endpoint services
+    /// are configured and before request processing starts.
+    /// </param>
     /// <returns>The configured <see cref="WebApplication"/> instance.</returns>
-    public static WebApplication MapAppEndpoints(this WebApplication app)
+    public static WebApplication MapAppEndpoints(
+        this WebApplication app,
+        IReadOnlyList<LoadedPlugin> plugins)
     {
         app.MapGet("/", () => Results.Json(new
         {
@@ -46,6 +53,7 @@ public static class EndpointConfiguration
             environment = app.Environment.EnvironmentName
         }));
         app.MapControllers();
+        PluginApplicationConfiguration.MapEndpoints(app, plugins);
 
         app.MapGet("/health", async (HttpContext context, IJwtKeyStore keyStore, IReadOnlyList<LoadedPlugin> plugins) =>
         {

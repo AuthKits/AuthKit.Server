@@ -19,6 +19,7 @@
   <Project Path="src/Host/Host.csproj" />
   <Folder Name="/Tests/">
     <Project Path="tests/Host/AuthKit.Host.Tests.csproj" />
+    <Project Path="tests/Host.IntegrationTests/AuthKit.Host.IntegrationTests.csproj" />
     <Project Path="tests/Plugins/Abstractions/AuthKit.Plugins.Abstractions.Tests.csproj" />
   </Folder>
 </Solution>

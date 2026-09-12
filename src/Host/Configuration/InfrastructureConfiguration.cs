@@ -38,6 +38,12 @@ public static class InfrastructureConfiguration
             opts.UseFluentValidation();
             opts.IncludeEventHandlers(plugins);
 
+            if (builder.Configuration.GetValue<bool>("AuthKit:SkipStorageMigrationOnStartup"))
+            {
+                opts.AutoBuildMessageStorageOnStartup = AutoCreate.None;
+                opts.Durability.Mode = DurabilityMode.MediatorOnly;
+            }
+
             opts.Policies.MessageExecutionLogLevel(LogLevel.None);
             opts.Policies.MessageSuccessLogLevel(LogLevel.None);
         });
