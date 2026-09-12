@@ -29,14 +29,17 @@ public sealed class JwtKeyStoreInitializer(
     ILogger<JwtKeyStoreInitializer> logger)
     : IHostedService, IAsyncDisposable
 {
+    private IJwtKeyStore? _store;
+
     /// <summary>
     /// Initializes the JWT key store during application startup.
     /// </summary>
     /// <param name="cancellationToken">Token that can be used to signal cancellation of the startup operation.</param>
     /// <remarks>
     /// <para>
-    /// A temporary asynchronous service scope is created to resolve the
-    /// <see cref="IJwtKeyStore"/> instance.
+    /// The <see cref="IJwtKeyStore"/> is registered as a singleton, so it is
+    /// resolved directly from the provider and held for the lifetime of the
+    /// initializer so its cryptographic resources can be released on shutdown.
     /// </para>
     /// <para>
     /// The initialization duration is measured using
@@ -46,10 +49,8 @@ public sealed class JwtKeyStoreInitializer(
     /// </remarks>
     public async Task StartAsync(CancellationToken cancellationToken)
     {
-        await using var scope = provider.CreateAsyncScope();
-
-        var store =
-            scope.ServiceProvider.GetRequiredService<IJwtKeyStore>();
+        var store = provider.GetRequiredService<IJwtKeyStore>();
+        _store = store;
 
         var stopwatch = Stopwatch.StartNew();
 
@@ -83,12 +84,7 @@ public sealed class JwtKeyStoreInitializer(
     
     public async ValueTask DisposeAsync()
     {
-        await using var scope = provider.CreateAsyncScope();
-
-        if (scope.ServiceProvider.GetService<IJwtKeyStore>()
-            is IAsyncDisposable asyncStore)
-        {
+        if (_store is IAsyncDisposable asyncStore)
             await asyncStore.DisposeAsync();
-        }
     }
 }
