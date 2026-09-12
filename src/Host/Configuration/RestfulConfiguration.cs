@@ -1,5 +1,6 @@
 using Host.Plugins;
 using Microsoft.OpenApi;
+using AuthKit.Plugins.Integrations;
 
 namespace Host.Configuration;
 
@@ -63,6 +64,14 @@ public static class RestfulConfiguration
             c.SwaggerDoc("v1", new OpenApiInfo { Title = "API", Version = "v1" });
             c.EnableAnnotations();
 
+            foreach (var plugin in plugins
+                .OrderBy(plugin => plugin.Plugin.Id, StringComparer.Ordinal)
+                .Select(plugin => plugin.Plugin)
+                .OfType<IOpenApiPlugin>())
+            {
+                plugin.ConfigureOpenApi(c);
+            }
+
             c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
             {
                 Name = "Authorization",
@@ -110,7 +119,7 @@ public static class RestfulConfiguration
                     {
                         {
                             new OpenApiSecuritySchemeReference(name, document),
-                            new List<string>()
+                            []
                         }
                     });
                 }
@@ -120,7 +129,7 @@ public static class RestfulConfiguration
         return services;
     }
 
-    internal static OpenApiSpecVersion ResolveOpenApiSpecVersion(IConfiguration configuration)
+    private static OpenApiSpecVersion ResolveOpenApiSpecVersion(IConfiguration configuration)
     {
         var configured = configuration["OpenApi:SpecVersion"]?.Trim() ?? "3.0";
 
