@@ -65,13 +65,17 @@ public class ExamplePlugin : IAuthKitPlugin
     }
 
     /// <summary>
-    /// Performs a health check for the plugin.
+    /// Performs a structured, cancellable health check for the plugin.
     /// </summary>
-    /// <param name="services">The <see cref="IServiceProvider"/> used to resolve services required for the health check. </param>
-    /// <returns>
-    /// A task containing <see langword="true"/> when the plugin is healthy;
-    /// otherwise, <see langword="false"/>.
-    /// </returns>
-    public Task<bool> CheckHealthAsync(IServiceProvider services)
-        => Task.FromResult(true);
+    /// <param name="services">The service provider used to resolve health check dependencies.</param>
+    /// <param name="cancellationToken">A token that can cancel the health check.</param>
+    /// <returns>A task containing the plugin health results.</returns>
+    public Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
+        IServiceProvider services,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
+            new[] { new PluginHealthResult(PluginHealthStatus.Healthy) });
+    }
 }

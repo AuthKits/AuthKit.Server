@@ -6,6 +6,7 @@ using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 namespace AuthKit.PluginContractValidator.Rules;
 
@@ -41,6 +42,7 @@ public sealed class HealthRule : IPluginContractRule
     {
         var errors = new List<string>();
         var services = new ServiceCollection();
+        services.AddLogging();
         var configuration = new ConfigurationBuilder().Build();
 
         try
@@ -56,7 +58,9 @@ public sealed class HealthRule : IPluginContractRule
         try
         {
             await using var provider = services.BuildServiceProvider();
-            await plugin.Instance.CheckHealthAsync(provider);
+            var results = await plugin.Instance.CheckHealthAsync(provider, cancellationToken);
+            if (results is null || results.Count == 0)
+                errors.Add("health: CheckHealthAsync returned no health results.");
         }
         catch (Exception ex)
         {
