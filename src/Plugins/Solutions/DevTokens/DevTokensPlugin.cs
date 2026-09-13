@@ -3,6 +3,7 @@ using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
+using AuthKit.Plugins.Abstractions.Models;
 using FluentValidation;
 using DevTokens.Interfaces;
 using DevTokens.Middleware;
@@ -74,20 +75,29 @@ public sealed class DevTokensPlugin : IAuthKitPlugin
 
     public Type MiddlewareType => typeof(DeveloperTokenMiddleware);
 
-    public async Task<bool> CheckHealthAsync(IServiceProvider services)
+    public async Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
+        IServiceProvider services,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var store = services.GetService<IDocumentStore>();
-        if (store is null) return false;
+        if (store is null)
+            return [new(PluginHealthStatus.Unhealthy, "Document store is unavailable.")];
 
         try
         {
             await using var session = store.LightweightSession();
-            await session.Query<DeveloperToken>().Take(1).ToListAsync();
-            return true;
+            await session.Query<DeveloperToken>().Take(1).ToListAsync(token: cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
+            return [new(PluginHealthStatus.Healthy, "Developer token store is available.")];
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            throw;
         }
         catch
         {
-            return false;
+            return [new(PluginHealthStatus.Unhealthy, "Developer token store is unavailable.")];
         }
     }
 

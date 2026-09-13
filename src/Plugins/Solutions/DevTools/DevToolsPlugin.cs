@@ -2,6 +2,7 @@ using DevTools.Options;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
+using AuthKit.Plugins.Abstractions.Models;
 using DevTools.Catalog;
 using DevTools.Middleware;
 using DevTools.Runtime;
@@ -72,19 +73,26 @@ public sealed class DevToolsPlugin : IAuthKitPlugin
     /// </summary>
     /// <param name="services">The root service provider of the host application.</param>
     /// <returns><c>true</c> when the catalog is available; otherwise, <c>false</c>. </returns>
-    public Task<bool> CheckHealthAsync(IServiceProvider services)
+    public Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
+        IServiceProvider services,
+        CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var catalog = services.GetService<IGrpcServiceCatalog>();
-        if (catalog is null) return Task.FromResult(false);
+        if (catalog is null)
+            return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
+                [new(PluginHealthStatus.Unhealthy, "gRPC service catalog is unavailable.")]);
 
         try
         {
             _ = catalog.GetServices();
-            return Task.FromResult(true);
+            return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
+                [new(PluginHealthStatus.Healthy, "gRPC service catalog is available.")]);
         }
         catch
         {
-            return Task.FromResult(false);
+            return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
+                [new(PluginHealthStatus.Unhealthy, "gRPC service catalog is unavailable.")]);
         }
     }
 }
