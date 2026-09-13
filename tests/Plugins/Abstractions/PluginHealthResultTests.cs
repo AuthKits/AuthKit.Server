@@ -1,4 +1,6 @@
 using System.Text.Json;
+using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Models;
 using Xunit;
 
@@ -45,5 +47,58 @@ public sealed class PluginHealthResultTests
         Assert.NotNull(restored.Data);
         Assert.Equal("cache", restored.Data["dependency"].ToString());
         Assert.Equal("2", restored.Data["retry_count"].ToString());
+    }
+
+    [Fact]
+    public async Task PluginHealthContract_PreservesMultipleResultsAndCancellationToken()
+    {
+        var plugin = new StructuredHealthPlugin();
+        using var cancellation = new CancellationTokenSource();
+
+        var results = await plugin.CheckHealthAsync(
+            new ServiceProviderStub(),
+            cancellation.Token);
+
+        Assert.Equal(2, results.Count);
+        Assert.Equal(PluginHealthStatus.Healthy, results[0].Status);
+        Assert.Equal(PluginHealthStatus.Degraded, results[1].Status);
+        Assert.Equal(cancellation.Token, plugin.ReceivedToken);
+    }
+
+    [Fact]
+    public async Task PluginHealthContract_DefaultImplementationReturnsHealthyResult()
+    {
+        IAuthKitPlugin plugin = new DefaultHealthPlugin();
+
+        var results = await plugin.CheckHealthAsync(new ServiceProviderStub());
+
+        var result = Assert.Single(results);
+        Assert.Equal(PluginHealthStatus.Healthy, result.Status);
+    }
+
+    [PluginMetadata("structured-health", "1.0.0", [], [], [], description: "Structured health test")]
+    private sealed class StructuredHealthPlugin : IAuthKitPlugin
+    {
+        public CancellationToken ReceivedToken { get; private set; }
+
+        public Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
+            IServiceProvider services,
+            CancellationToken cancellationToken = default)
+        {
+            ReceivedToken = cancellationToken;
+            return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
+            [
+                new(PluginHealthStatus.Healthy, "Database is available."),
+                new(PluginHealthStatus.Degraded, "Cache is responding slowly.")
+            ]);
+        }
+    }
+
+    [PluginMetadata("default-health", "1.0.0", [], [], [], description: "Default health test")]
+    private sealed class DefaultHealthPlugin : IAuthKitPlugin;
+
+    private sealed class ServiceProviderStub : IServiceProvider
+    {
+        public object? GetService(Type serviceType) => null;
     }
 }
