@@ -17,8 +17,9 @@ namespace AuthKit.PluginContractValidator.Rules;
 /// <remarks>
 /// The rule builds an isolated service provider from the services registered
 /// by the plugin and invokes <see cref="IAuthKitPlugin.CheckHealthAsync"/>.
-/// Any exception during service configuration or health checking is reported
-/// as a contract violation.
+/// Basic framework services the host would provide, such as logging, are
+/// registered so plugins can rely on them. Any exception during service
+/// configuration or health checking is reported as a contract violation.
 /// </remarks>
 public sealed class HealthRule : IPluginContractRule
 {

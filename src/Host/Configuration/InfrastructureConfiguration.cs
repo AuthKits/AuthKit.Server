@@ -4,6 +4,7 @@ using Marten;
 using Wolverine;
 using Wolverine.FluentValidation;
 using Wolverine.Marten;
+using AuthKit.Plugins.Integrations;
 
 namespace Host.Configuration;
 
@@ -59,12 +60,21 @@ public static class InfrastructureConfiguration
     /// <param name="configuration">Application configuration containing Marten connection strings.</param>
     public static IServiceCollection ConfigureMarten(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IReadOnlyList<LoadedPlugin> plugins)
     {
         services.AddMarten(opts =>
             {
                 opts.Connection(configuration.GetConnectionString("Marten")!);
                 opts.AutoCreateSchemaObjects = AutoCreate.All;
+
+                foreach (var plugin in plugins
+                    .OrderBy(plugin => plugin.Plugin.Id, StringComparer.Ordinal)
+                    .Select(plugin => plugin.Plugin)
+                    .OfType<IMartenPlugin>())
+                {
+                    plugin.ConfigureMarten(opts);
+                }
             })
             .IntegrateWithWolverine()
             .UseLightweightSessions();

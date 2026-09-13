@@ -17,6 +17,7 @@ COPY ["src/Core/Core.csproj", "src/Core/"]
 COPY ["src/Plugins/Abstractions/AuthKit.Plugins.Abstractions.csproj", "src/Plugins/Abstractions/"]
 COPY ["src/Plugins/Solutions/DevTokens/DevTokens.csproj", "src/Plugins/Solutions/DevTokens/"]
 COPY ["src/Plugins/Solutions/DevTools/DevTools.csproj", "src/Plugins/Solutions/DevTools/"]
+COPY ["src/Plugins/Integrations/AuthKit.Plugins.Integrations.csproj", "src/Plugins/Integrations/"]
 
 COPY ["tests/Host/AuthKit.Host.Tests.csproj", "tests/Host/"]
 COPY ["tests/Host.IntegrationTests/AuthKit.Host.IntegrationTests.csproj", "tests/Host.IntegrationTests/"]
