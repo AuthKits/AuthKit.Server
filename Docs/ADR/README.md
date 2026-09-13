@@ -75,6 +75,7 @@ The table below shows the architecture areas and their current scope.
 | [ADR-022](./022-plugin-configuration-context-and-builder.md) | Extend Plugin Configuration With The Host Builder And Scoped Context | Plugins | accepted | 2026-09-12 |
 | [ADR-023](./023-plugin-application-pipeline-hooks.md) | Integrate Plugin Endpoints And Middleware Through Explicit Host Pipeline Hooks | Plugins | accepted | 2026-09-12 |
 | [ADR-024](./024-plugin-lifecycle-and-hosted-services.md) | Bridge Plugin Lifecycle Hooks To The Standard .NET Host Lifecycle | Plugins | accepted | 2026-09-12 |
+| [ADR-025](./025-structured-plugin-health-contract.md) | Expose Structured And Cancellable Plugin Health Results | Plugins | accepted | 2026-09-13 |
 
 ## Relationships Between Areas
 
