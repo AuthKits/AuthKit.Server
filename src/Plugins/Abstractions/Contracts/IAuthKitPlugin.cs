@@ -206,12 +206,12 @@ public interface IAuthKitPlugin
         ConfigureServices(services, context.Configuration);
 
     /// <summary>
-    /// Performs an optional health check for the plugin.
+    /// Performs an optional structured health check for the plugin.
     /// </summary>
     /// <param name="services">The root service provider of the host application.</param>
+    /// <param name="cancellationToken">A token that can cancel the health check.</param>
     /// <returns>
-    /// <c>true</c> when the plugin is currently able to serve requests;
-    /// otherwise, <c>false</c>.
+    /// One or more structured health results reported by the plugin.
     /// </returns>
     /// <remarks>
     /// <para>
@@ -221,18 +221,21 @@ public interface IAuthKitPlugin
     /// dependencies.
     /// </para>
     /// <para>
-    /// A plugin should return <c>false</c> when a required dependency is
-    /// unavailable, such as when its database or external service cannot
-    /// currently be reached.
+    /// A plugin may return separate results for independent dependencies or
+    /// capabilities. Cancellation must be propagated to cancellable operations
+    /// and is not converted into a fabricated health result.
     /// </para>
     /// <para>
-    /// The default implementation reports the plugin as healthy. Plugins
-    /// that do not require custom health validation therefore do not need
-    /// to implement this member.
+    /// The default implementation reports the plugin as healthy. Existing
+    /// plugins that do not require custom health validation therefore do not
+    /// need to implement this member.
     /// </para>
     /// </remarks>
-    Task<bool> CheckHealthAsync(IServiceProvider services) =>
-        Task.FromResult(true);
+    Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
+        IServiceProvider services,
+        CancellationToken cancellationToken = default) =>
+        Task.FromResult<IReadOnlyList<PluginHealthResult>>(
+        [new PluginHealthResult(PluginHealthStatus.Healthy)]);
 
     /// <summary>
     /// Gets the optional ASP.NET Core middleware type contributed by the plugin.

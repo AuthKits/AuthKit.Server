@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using AuthKit.Plugins.Abstractions.Models;
 using Core.KeyManagement.Interfaces;
 using Host.Plugins;
 
@@ -59,15 +60,25 @@ public static class EndpointConfiguration
         {
             var keyStoreHealthy = keyStore.GetPublicJwks().Any();
 
-            var pluginResults = new Dictionary<string, bool>();
+            var pluginResults = new Dictionary<string, IReadOnlyList<PluginHealthResult>>();
             foreach (var lp in plugins)
-                pluginResults[lp.Plugin.Name] = await lp.Plugin.CheckHealthAsync(context.RequestServices);
+                pluginResults[lp.Plugin.Name] = await lp.Plugin.CheckHealthAsync(
+                    context.RequestServices,
+                    context.RequestAborted);
 
-            var healthy = keyStoreHealthy && pluginResults.Values.All(ok => ok);
+            var pluginStatus = pluginResults.Values
+                .SelectMany(results => results)
+                .Select(result => result.Status)
+                .DefaultIfEmpty(PluginHealthStatus.Healthy)
+                .Max();
+            var status = keyStoreHealthy
+                ? pluginStatus
+                : PluginHealthStatus.Unhealthy;
+            var healthy = status == PluginHealthStatus.Healthy;
 
             return Results.Json(new
             {
-                status = healthy ? "Healthy" : "Unhealthy",
+                status = status.ToString(),
                 time = DateTime.UtcNow,
                 jwtKeyStore = keyStoreHealthy ? "Healthy" : "Unhealthy",
                 plugins = pluginResults

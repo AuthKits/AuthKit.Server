@@ -54,12 +54,19 @@ public sealed class JwtKeyStoreInitializer(
 
         var stopwatch = Stopwatch.StartNew();
 
-        await AnsiConsole.Status()
-            .Spinner(Spinner.Known.Dots)
-            .SpinnerStyle(Style.Parse("green"))
-            .StartAsync(
-                "Initializing JWT KeyStore...",
-                async _ => await store.InitializeAsync());
+        if (System.Console.IsOutputRedirected)
+        {
+            await store.InitializeAsync();
+        }
+        else
+        {
+            await AnsiConsole.Status()
+                .Spinner(Spinner.Known.Dots)
+                .SpinnerStyle(Style.Parse("green"))
+                .StartAsync(
+                    "Initializing JWT KeyStore...",
+                    async _ => await store.InitializeAsync());
+        }
 
         stopwatch.Stop();
 
