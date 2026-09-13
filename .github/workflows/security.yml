@@ -209,5 +209,5 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
-      - name: Check code formatting (PluginContractValidator)
-        run: dotnet format tools/PluginContractValidator/PluginContractValidator.csproj --verify-no-changes --verbosity diagnostic
+      - name: Check code formatting (AuthKit.PluginContractValidator)
+        run: dotnet format tools/AuthKit.PluginContractValidator/AuthKit.PluginContractValidator.csproj --verify-no-changes --verbosity diagnostic

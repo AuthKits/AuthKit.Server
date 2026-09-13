@@ -8,3 +8,5 @@ obj/
 .env
 /net-commander
 qodana.yaml
+src/Plugins/Solutions/DevTokens/manifest.json
+src/Plugins/Solutions/DevTools/manifest.json

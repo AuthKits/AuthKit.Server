@@ -29,7 +29,7 @@ builder.Services.ConfigureApp(builder.Configuration, plugins)
     .AddGrpcServices()
     .AddRestfulServices(plugins, builder.Configuration, restfulLogger)
     .AddApiKeyCredentialExtraction()
-    .AddKeycloakServices();
+    .AddKeycloakServices(plugins);
 
 foreach (var lp in plugins)
     PluginConfigurationInvoker.Configure(lp.Plugin, builder, builder.Configuration);
@@ -37,7 +37,7 @@ foreach (var lp in plugins)
 PluginHostedServiceRegistration.Register(builder.Services, plugins);
 
 builder.ConfigureWolverine(plugins);
-builder.Services.ConfigureMarten(builder.Configuration);
+builder.Services.ConfigureMarten(builder.Configuration, plugins);
 builder.WebHost.ConfigureKestrelServer();
 
 builder.Services.Configure<AuthKitServerOptions>(

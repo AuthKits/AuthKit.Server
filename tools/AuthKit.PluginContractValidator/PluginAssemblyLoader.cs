@@ -111,7 +111,7 @@ public sealed class PluginAssemblyLoader : IPluginLoader
         {
             Resolvers.Add(resolver);
             if (_handler is not null) return;
-            
+
             _handler = (context, name) =>
             {
                 for (var i = Resolvers.Count - 1; i >= 0; i--)

@@ -58,7 +58,7 @@ public sealed class MiddlewareRule : IPluginContractRule
 
         if (invokeMethod.ReturnType != typeof(Task))
         {
-            errors.Add($"middleware: InvokeAsync on '{middlewareType.Name}' " + 
+            errors.Add($"middleware: InvokeAsync on '{middlewareType.Name}' " +
                 "must return Task.");
         }
 

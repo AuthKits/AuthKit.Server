@@ -2,6 +2,8 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Newtonsoft.Json.Linq;
+using Host.Plugins;
+using Microsoft.AspNetCore.Authentication;
 
 namespace Host.Configuration;
 
@@ -27,12 +29,15 @@ public static class KeycloakConfiguration
     /// Registers and configures Keycloak JWT bearer authentication.
     /// </summary>
     /// <param name="services">The service collection used to register authentication services.</param>
+    /// <param name="plugins"></param>
     /// <remarks>
     /// Reads the Keycloak URL, realm, and client identifier from the
     /// <c>KEYCLOAK_URL</c>, <c>KEYCLOAK_REALM</c>, and
     /// <c>KEYCLOAK_CLIENT_ID</c> environment variables respectively.
     /// </remarks>
-    public static void AddKeycloakServices(this IServiceCollection services)
+    public static void AddKeycloakServices(
+        this IServiceCollection services,
+        IReadOnlyList<LoadedPlugin> plugins)
     {
         var baseUrl = Environment.GetEnvironmentVariable("KEYCLOAK_URL") ?? "http://keycloak:8080";
         var realm = Environment.GetEnvironmentVariable("KEYCLOAK_REALM") ?? "authz";
@@ -80,6 +85,15 @@ public static class KeycloakConfiguration
                         HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
                 };
             });
+
+        foreach (var plugin in plugins.OrderBy(plugin => plugin.Plugin.Id, StringComparer.Ordinal))
+            plugin.Plugin.ConfigureAuthentication(
+                new AuthenticationBuilder(services));
+
+        services.AddAuthorization(options =>
+        {
+            AuthorizationPolicyCollisionGuard.Configure(options, plugins);
+        });
     }
 
     /// <summary>

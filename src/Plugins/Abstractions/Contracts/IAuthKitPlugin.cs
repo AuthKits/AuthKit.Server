@@ -1,13 +1,14 @@
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using AuthKit.Plugins.Abstractions.Models;
-using AuthKit.Plugins.Abstractions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authorization;
 using System.Reflection;
 
 namespace AuthKit.Plugins.Abstractions.Contracts;
@@ -67,7 +68,7 @@ public interface IAuthKitPlugin
     /// The host may display the description in startup output,
     /// diagnostics, administrative interfaces, or other status surfaces.
     /// </remarks>
-    string? Description => Metadata.Description;
+    string Description => Metadata.Description;
 
     /// <summary>
     /// Gets the version of the plugin as a semantic version (SemVer 2.0.0).
@@ -147,7 +148,7 @@ public interface IAuthKitPlugin
     /// <see cref="PluginExtensions.Supports(AuthKit.Plugins.Abstractions.Contracts.IAuthKitPlugin,string)"/> extension method.
     /// Example: <c>plugin.Supports("auth")</c>.
     /// </remarks>
-    IReadOnlySet<string> Capabilities => _capabilities ??=
+    IReadOnlySet<string> Capabilities =>
         System.Collections.Immutable.ImmutableHashSet.CreateRange(StringComparer.OrdinalIgnoreCase, Metadata.Capabilities);
 
     /// <summary>
@@ -155,12 +156,6 @@ public interface IAuthKitPlugin
     /// </summary>
     PluginMetadataAttribute Metadata => GetType().GetCustomAttribute<PluginMetadataAttribute>()
         ?? throw new InvalidOperationException($"Plugin {GetType().Name} is missing [PluginMetadata] attribute.");
-
-    // Shared immutable empty capabilities set with OrdinalIgnoreCase comparer
-    private static readonly IReadOnlySet<string> EmptyCapabilities =
-        System.Collections.Immutable.ImmutableHashSet.Create<string>(StringComparer.OrdinalIgnoreCase);
-
-    private static IReadOnlySet<string>? _capabilities;
 
     /// <summary>
     /// Registers the plugin's services in the host dependency injection container.
@@ -207,9 +202,7 @@ public interface IAuthKitPlugin
     /// This overload is optional. Its default implementation delegates to the
     /// legacy service collection overload for existing plugins.
     /// </remarks>
-    void ConfigureServices(
-        IServiceCollection services,
-        AuthKitPluginContext context) =>
+    void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) =>
         ConfigureServices(services, context.Configuration);
 
     /// <summary>
@@ -277,7 +270,7 @@ public interface IAuthKitPlugin
     /// <summary>
     /// Configures plugin application middleware on the actual host application.
     /// </summary>
-    /// <param name="application">The application's live builder.</param>
+    /// <param name="application">The application's a live builder.</param>
     /// <remarks>
     /// When implemented, this hook takes precedence over <see cref="MiddlewareType"/>
     /// to prevent accidental duplicate middleware registration.
@@ -294,15 +287,13 @@ public interface IAuthKitPlugin
     /// <summary>
     /// Configures plugin middleware at the declared pipeline position.
     /// </summary>
-    /// <param name="application">The application's live builder.</param>
+    /// <param name="application">The application's a live builder.</param>
     /// <param name="position">The position currently being configured.</param>
     /// <remarks>
     /// The host invokes this hook once at <see cref="PipelinePosition"/>.
     /// Plugins at the same position are ordered by stable plugin ID.
     /// </remarks>
-    void ConfigurePipeline(
-        IApplicationBuilder application,
-        PluginPipelinePosition position)
+    void ConfigurePipeline(IApplicationBuilder application, PluginPipelinePosition position)
     {
     }
 
@@ -344,6 +335,86 @@ public interface IAuthKitPlugin
         new Dictionary<string, AuthKitSecuritySchemeDescriptor>();
 
     /// <summary>
+    /// Configures authentication schemes on the host-owned authentication builder.
+    /// </summary>
+    /// <param name="builder">The actual host authentication builder.</param>
+    /// <remarks>
+    /// <para>
+    /// This optional hook is invoked once per plugin while the host configures its
+    /// security infrastructure, before the service provider is built. Plugins are
+    /// processed in ascending <see cref="Id"/> order, so invocation order is
+    /// deterministic and does not depend on discovery order.
+    /// </para>
+    /// <para>
+    /// The hook receives the same <see cref="AuthenticationBuilder"/> used by the host,
+    /// so schemes registered here participate in the application authentication
+    /// infrastructure. Plugin services, including handler dependencies, may be
+    /// registered later through <c>ConfigureServices</c>.
+    /// </para>
+    /// <para>
+    /// This optional hook does not change the host default scheme. Scheme names are
+    /// globally significant; registering a name already owned by the host or by
+    /// another plugin fails explicitly when the authentication options are built.
+    /// </para>
+    /// </remarks>
+    void ConfigureAuthentication(AuthenticationBuilder builder)
+    {
+    }
+
+    /// <summary>
+    /// Configures authorization policies on the host-owned authorization options.
+    /// </summary>
+    /// <param name="options">The actual host authorization options.</param>
+    /// <remarks>
+    /// <para>
+    /// This optional hook is invoked once per plugin while the host configures its
+    /// security infrastructure, before the service provider is built. Plugins are
+    /// processed in ascending <see cref="Id"/> order, so invocation order is
+    /// deterministic and does not depend on discovery order.
+    /// </para>
+    /// <para>
+    /// Policies registered here are available through the standard ASP.NET Core
+    /// authorization infrastructure and can protect endpoints mapped by any plugin.
+    /// </para>
+    /// <para>
+    /// Policy names are globally significant. The host rejects duplicate ownership:
+    /// a policy name already registered by another plugin fails to start up with an
+    /// exception identifying both plugins. Plugins should use globally unique,
+    /// preferably namespaced policy names.
+    /// </para>
+    /// <para>
+    /// Existing default and fallback policies are not replaced by the host, and this
+    /// hook must not assume ownership of such global defaults.
+    /// </para>
+    /// </remarks>
+    void ConfigureAuthorization(AuthorizationOptions options)
+    {
+    }
+
+    /// <summary>
+    /// Binds strongly typed plugin options from the plugin configuration section using
+    /// the standard options DI infrastructure.
+    /// </summary>
+    /// <typeparam name="TOptions">The plugin options type.</typeparam>
+    /// <param name="services">The host service collection.</param>
+    /// <param name="configuration">The application configuration.</param>
+    /// <remarks>
+    /// <para>
+    /// Typically called from <c>ConfigureServices</c>. The section is resolved through
+    /// <see cref="Plugins.PluginExtensions.GetPluginConfiguration(AuthKit.Plugins.Abstractions.Contracts.IAuthKitPlugin,IConfiguration)"/>:
+    /// <c>Plugins:{Id}</c> wins when it exists, otherwise <c>Plugins:{Name}</c> is used,
+    /// matching the scoping of <see cref="AuthKitPluginContext"/>.
+    /// </para>
+    /// <para>
+    /// Registered options become readable through <c>IOptions&lt;TOptions&gt;</c> once
+    /// the service provider is built.
+    /// </para>
+    /// </remarks>
+    void BindConfiguration<TOptions>(IServiceCollection services, IConfiguration configuration)
+        where TOptions : class =>
+        services.Configure<TOptions>(this.GetPluginConfiguration(configuration));
+
+    /// <summary>
     /// Initializes plugin runtime resources before the host is considered started.
     /// </summary>
     /// <param name="cancellationToken">The host startup cancellation token.</param>
@@ -358,7 +429,7 @@ public interface IAuthKitPlugin
     Task OnStartedAsync(CancellationToken cancellationToken) => Task.CompletedTask;
 
     /// <summary>
-    /// Releases plugin runtime resources during graceful host shutdown.
+    /// Releases plugin runtime resources during a graceful host shutdown.
     /// </summary>
     /// <param name="cancellationToken">The host shutdown cancellation token.</param>
     /// <returns>A task that completes when shutdown preparation is complete.</returns>
@@ -368,5 +439,5 @@ public interface IAuthKitPlugin
     /// Gets hosted services owned by this plugin.
     /// </summary>
     /// <returns>A non-null collection of services registered in the host DI container.</returns>
-    IReadOnlyList<IHostedService> GetHostedServices() => Array.Empty<IHostedService>();
+    IReadOnlyList<IHostedService> GetHostedServices() => [];
 }
