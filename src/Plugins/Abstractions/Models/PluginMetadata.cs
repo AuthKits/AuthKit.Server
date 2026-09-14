@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 
 namespace AuthKit.Plugins.Abstractions.Models;
 
@@ -7,7 +8,7 @@ namespace AuthKit.Plugins.Abstractions.Models;
 /// Represents an immutable runtime snapshot of plugin metadata.
 /// </summary>
 /// <remarks>
-/// This record aggregates all metadata from <see cref="IAuthKitPlugin"/>
+/// This record aggregates all metadata from <see cref="Contracts.PluginContract.IAuthKitPlugin"/>
 /// and <see cref="PluginManifest"/>. It is created after the plugin is loaded
 /// and provides a consistent, immutable view of the plugin's metadata.
 /// </remarks>

@@ -77,7 +77,7 @@ public static class PluginValidator
             }
         }
             
-        // Check for self dependency
+        // Check for self-dependency
         if (dependsOn.Contains(pluginId, StringComparer.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("Plugin cannot depend on itself.");
@@ -91,7 +91,7 @@ public static class PluginValidator
     /// <param name="plugin">The plugin instance.</param>
     /// <exception cref="ArgumentNullException">Thrown if either manifest or plugin is null.</exception>
     /// <exception cref="InvalidOperationException">Thrown if the manifest and instance are inconsistent.</exception>
-    public static void ValidateConsistency(PluginManifest manifest, IAuthKitPlugin plugin)
+    public static void ValidateConsistency(PluginManifest manifest, PluginContract.IAuthKitPlugin plugin)
     {
         if (manifest == null)
         {

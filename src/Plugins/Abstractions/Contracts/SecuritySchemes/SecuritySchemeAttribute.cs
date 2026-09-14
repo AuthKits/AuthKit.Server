@@ -1,3 +1,5 @@
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+
 namespace AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
 /// <summary>
@@ -12,7 +14,7 @@ namespace AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 /// </para>
 /// <para>
 /// The scheme name must match a key returned by an enabled plugin's
-/// <see cref="IAuthKitPlugin.GetSecuritySchemes"/>; otherwise the host rejects
+/// <see cref="PluginContract.IAuthKitPlugin.GetSecuritySchemes"/>; otherwise the host rejects
 /// requests to the endpoint as a configuration error.
 /// </para>
 /// </remarks>
