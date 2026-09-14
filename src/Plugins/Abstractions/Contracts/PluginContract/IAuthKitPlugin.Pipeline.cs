@@ -1,0 +1,71 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
+
+namespace AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+
+public partial interface IAuthKitPlugin
+{
+    /// <summary>
+    /// Gets the optional ASP.NET Core middleware type contributed by the plugin.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// When specified, the host inserts the middleware into its request
+    /// processing pipeline at the plugin middleware slot.
+    /// </para>
+    /// <para>
+    /// The middleware type must follow the conventional ASP.NET Core middleware
+    /// pattern, including a constructor accepting <see cref="RequestDelegate"/>
+    /// and an <c>InvokeAsync</c> method accepting <see cref="HttpContext"/>.
+    /// Additional dependencies may be supplied through dependency injection.
+    /// </para>
+    /// <para>
+    /// The default value is <c>null</c>, indicating that the plugin does not
+    /// contribute middleware.
+    /// </para>
+    /// </remarks>
+    Type? MiddlewareType => null;
+
+    /// <summary>
+    /// Registers plugin-owned endpoints during host endpoint configuration.
+    /// </summary>
+    /// <param name="endpoints">The application's endpoint route builder.</param>
+    /// <remarks>
+    /// This optional hook runs after host services are configured and before
+    /// the application starts processing requests. Exceptions are propagated.
+    /// </remarks>
+    void MapEndpoints(IEndpointRouteBuilder endpoints)
+    {
+    }
+
+    /// <summary>
+    /// Configures plugin application middleware on the actual host application.
+    /// </summary>
+    /// <param name="application">The application's a live builder.</param>
+    /// <remarks>
+    /// When implemented, this hook takes precedence over <see cref="MiddlewareType"/>
+    /// to prevent accidental duplicate middleware registration.
+    /// </remarks>
+    void ConfigureApplication(IApplicationBuilder application)
+    {
+    }
+
+    /// <summary>
+    /// Gets the explicit pipeline position used by <see cref="ConfigurePipeline"/>.
+    /// </summary>
+    PluginPipelinePosition PipelinePosition => PluginPipelinePosition.BeforeAuthentication;
+
+    /// <summary>
+    /// Configures plugin middleware at the declared pipeline position.
+    /// </summary>
+    /// <param name="application">The application's a live builder.</param>
+    /// <param name="position">The position currently being configured.</param>
+    /// <remarks>
+    /// The host invokes this hook once at <see cref="PipelinePosition"/>.
+    /// Plugins at the same position are ordered by stable plugin ID.
+    /// </remarks>
+    void ConfigurePipeline(IApplicationBuilder application, PluginPipelinePosition position)
+    {
+    }
+}
