@@ -1,4 +1,4 @@
-﻿using Host.Plugins;
+﻿using Host.Plugins.Loading;
 using JasperFx;
 using Marten;
 using Wolverine;
@@ -6,7 +6,7 @@ using Wolverine.FluentValidation;
 using Wolverine.Marten;
 using AuthKit.Plugins.Integrations;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Infrastructure;
 
 /// <summary>
 /// Provides extension methods for configuring application infrastructure.

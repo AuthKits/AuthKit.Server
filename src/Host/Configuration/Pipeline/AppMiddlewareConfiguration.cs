@@ -1,10 +1,11 @@
-using Host.Plugins;
+using Host.Plugins.Loading;
+using Host.Plugins.Configuration;
 using Host.Restful.Middleware.Exceptions;
 using Host.Security.Middleware;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Pipeline;
 
 /// <summary>
 /// Provides extension methods for configuring the application's HTTP middleware

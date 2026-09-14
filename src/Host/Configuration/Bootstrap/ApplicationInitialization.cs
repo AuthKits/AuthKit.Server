@@ -3,12 +3,12 @@ using Core.KeyManagement.Services;
 using Core.Options;
 using Core.KeyManagement.Entity;
 using FluentValidation;
-using Host.Plugins;
+using Host.Plugins.Loading;
 using Host.KeyManagement.Repositories;
 using Host.ServiceDiscovery;
 using Host.TokenKeyBindings.Repositories;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Bootstrap;
 
 /// <summary>
 /// Provides application service registration and dependency injection configuration.

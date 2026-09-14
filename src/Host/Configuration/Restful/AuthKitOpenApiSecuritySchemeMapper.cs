@@ -3,7 +3,7 @@ using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Security.Options;
 using Microsoft.OpenApi;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Restful;
 
 /// <summary>
 /// Maps AuthKit security scheme descriptors to OpenAPI security scheme definitions.

@@ -1,6 +1,6 @@
 ﻿using Host.Grpc;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Grpc;
 
 /// <summary>
 /// Provides extension methods for configuring gRPC services and endpoints.

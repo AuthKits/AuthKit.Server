@@ -1,9 +1,11 @@
 ﻿using System.Diagnostics;
 using AuthKit.Plugins.Abstractions.Models;
 using Core.KeyManagement.Interfaces;
-using Host.Plugins;
+using Host.Plugins.Loading;
+using Host.Plugins.Configuration;
+using Host.Plugins.Health;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Pipeline;
 
 /// <summary>
 /// Provides extension methods for mapping AuthKit application endpoints.

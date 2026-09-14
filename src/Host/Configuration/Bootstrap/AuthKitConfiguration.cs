@@ -8,7 +8,7 @@ using Host.Restful.Middleware.Exceptions;
 using Host.TokenKeyBindings.Repositories;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Bootstrap;
 
 /// <summary>
 /// Provides dependency injection configuration for AuthKit core services.

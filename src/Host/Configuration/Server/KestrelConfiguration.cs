@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.Server.Kestrel.Core;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Server;
 
 /// <summary>
 /// Provides configuration helpers for the Kestrel web server.

@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Reflection;
+using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Authorization;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Authentication;
 
 /// <summary>
 /// Detects authorization policy name collisions between loaded plugins.
@@ -39,7 +40,7 @@ internal static class AuthorizationPolicyCollisionGuard
     /// </exception>
     public static void Configure(
         AuthorizationOptions options,
-        IReadOnlyList<Host.Plugins.LoadedPlugin> plugins)
+        IReadOnlyList<LoadedPlugin> plugins)
     {
         var owners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

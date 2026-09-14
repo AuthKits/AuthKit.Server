@@ -2,10 +2,10 @@
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Newtonsoft.Json.Linq;
-using Host.Plugins;
+using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Authentication;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Authentication;
 
 /// <summary>
 /// Provides configuration for Keycloak-based JWT authentication.

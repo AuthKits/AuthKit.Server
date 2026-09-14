@@ -1,8 +1,8 @@
-using Host.Plugins;
+using Host.Plugins.Loading;
 using Microsoft.OpenApi;
 using AuthKit.Plugins.Integrations;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Restful;
 
 /// <summary>
 /// Provides extension methods for configuring AuthKit RESTful services and

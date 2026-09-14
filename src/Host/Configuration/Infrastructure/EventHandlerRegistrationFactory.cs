@@ -1,8 +1,8 @@
 using Core.KeyManagement.Services;
-using Host.Plugins;
+using Host.Plugins.Loading;
 using Wolverine;
 
-namespace Host.Configuration;
+namespace Host.Configuration.Infrastructure;
 
 /// <summary>
 /// Provides extension methods for registering Wolverine event handlers.
