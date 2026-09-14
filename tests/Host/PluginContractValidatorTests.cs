@@ -2,7 +2,7 @@ using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using AuthKit.Plugins.Abstractions.Models;
-using Host.Plugins;
+using Host.Plugins.Contract;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;

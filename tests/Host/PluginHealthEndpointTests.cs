@@ -4,8 +4,8 @@ using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Models;
 using Core.KeyManagement.DTO;
 using Core.KeyManagement.Interfaces;
-using Host.Configuration;
-using Host.Plugins;
+using Host.Configuration.Pipeline;
+using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -14,12 +14,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using PluginMetadataAttribute = AuthKit.Plugins.Abstractions.Contracts.Plugins.PluginMetadataAttribute;
 using Xunit;
+using Host.Plugins.Health;
 
 namespace AuthKit.Host.Tests;
 
 /// <summary>
 /// Verifies the health endpoint aggregation semantics implemented by
-/// <see cref="Host.Configuration.EndpointConfiguration"/>: collection of multiple
+/// <see cref="Host.Configuration.Pipeline.EndpointConfiguration"/>: collection of multiple
 /// structured results, maximum-status aggregation, default behavior for plugins
 /// without custom health checks, and key store integration.
 /// </summary>

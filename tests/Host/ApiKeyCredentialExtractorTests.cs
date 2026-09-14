@@ -3,6 +3,7 @@ using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Host.Security;
 using Host.Security.LocationExtractors;
 using Host.Security.Middleware;
+using Host.Security.Registry;
 using Host.Security.Validation;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;

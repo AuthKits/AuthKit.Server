@@ -1,8 +1,9 @@
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Integrations;
-using Host.Configuration;
-using Host.Plugins;
+using Host.Configuration.Infrastructure;
+using Host.Configuration.Restful;
+using Host.Plugins.Loading;
 using Marten;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;

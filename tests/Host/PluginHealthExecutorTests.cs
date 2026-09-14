@@ -1,7 +1,8 @@
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Models;
-using Host.Plugins;
+using Host.Plugins.Loading;
+using Host.Plugins.Health;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;

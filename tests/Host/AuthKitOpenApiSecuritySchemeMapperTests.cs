@@ -1,6 +1,6 @@
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
-using Host.Configuration;
+using Host.Configuration.Restful;
 using Host.Security.Options;
 using Microsoft.OpenApi;
 using Xunit;
