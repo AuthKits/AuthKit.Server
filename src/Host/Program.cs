@@ -1,10 +1,20 @@
-using Host.Configuration;
-using Host.Plugins;
+using Host.Configuration.Authentication;
+using Host.Configuration.Bootstrap;
+using Host.Configuration.Grpc;
+using Host.Configuration.Infrastructure;
+using Host.Configuration.Pipeline;
+using Host.Configuration.Restful;
+using Host.Configuration.Server;
+using Host.Plugins.Loading;
+using Host.Plugins.Configuration;
+using Host.Plugins.Lifecycle;
 using Host.Cli;
 using Host.Security;
+using Host.Security.Registrations;
 using AuthKit.Plugins.Abstractions;
 using System.Reflection;
 using AuthKit.Plugins.Abstractions.Models;
+using Host.Plugins.Health;
 
 var builder = WebApplication.CreateBuilder(args);
 

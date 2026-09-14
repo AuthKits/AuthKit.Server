@@ -1,4 +1,4 @@
-using Host.Plugins;
+using Host.Plugins.Loading;
 using Microsoft.Extensions.Options;
 using Spectre.Console;
 

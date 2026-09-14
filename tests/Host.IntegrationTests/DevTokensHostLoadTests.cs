@@ -1,7 +1,7 @@
 using System.Net;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
-using Host.Plugins;
+using Host.Plugins.Loading;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 

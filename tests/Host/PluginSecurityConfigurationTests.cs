@@ -1,8 +1,8 @@
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
-using Host.Configuration;
-using Host.Plugins;
+using Host.Configuration.Authentication;
+using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.DependencyInjection;
