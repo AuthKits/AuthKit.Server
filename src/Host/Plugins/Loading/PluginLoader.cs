@@ -5,6 +5,7 @@ using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Models;
 using Host.Plugins.Contract;
 using Microsoft.Extensions.Logging;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace Host.Plugins.Loading;
 

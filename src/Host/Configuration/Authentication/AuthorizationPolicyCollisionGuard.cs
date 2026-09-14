@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Reflection;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Authorization;
 
@@ -14,7 +15,7 @@ namespace Host.Configuration.Authentication;
 /// silently replaces a previously registered policy when the same name is added twice, which
 /// would let a plugin silently overwrite another plugin's policy. To keep collisions explicit,
 /// the host snapshots the policy map before and after each plugin's
-/// <see cref="AuthKit.Plugins.Abstractions.Contracts.IAuthKitPlugin.ConfigureAuthorization"/> hook
+/// <see cref="IAuthKitPlugin.ConfigureAuthorization"/> hook
 /// and fails startup when a name already owned by another plugin is registered again.
 /// </para>
 /// <para>
