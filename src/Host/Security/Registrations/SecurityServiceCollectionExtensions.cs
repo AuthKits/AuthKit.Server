@@ -2,9 +2,10 @@ using AuthKit.Plugins.Abstractions;
 using Host.Security.BodyParsers;
 using Host.Security.LocationExtractors;
 using Host.Security.Options;
+using Host.Security.Registry;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Host.Security;
+namespace Host.Security.Registrations;
 
 /// <summary>
 /// Provides dependency injection configuration for API key credential extraction.

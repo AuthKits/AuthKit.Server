@@ -1,7 +1,7 @@
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
-using Host.Plugins;
+using Host.Plugins.Loading;
 
-namespace Host.Security;
+namespace Host.Security.Registry;
 
 /// <summary>
 /// The default <see cref="ISecuritySchemeRegistry"/> built from the security

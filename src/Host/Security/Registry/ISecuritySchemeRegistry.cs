@@ -1,6 +1,6 @@
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
-namespace Host.Security;
+namespace Host.Security.Registry;
 
 /// <summary>
 /// Resolves the <see cref="AuthKitSecuritySchemeDescriptor"/> that protects the
