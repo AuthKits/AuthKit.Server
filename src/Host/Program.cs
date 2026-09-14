@@ -23,6 +23,9 @@ var restfulLogger = LoggerFactory.Create(logging => logging.AddConsole()).Create
 
 // === Core Config ===
 builder.Services.AddSingleton(plugins);
+builder.Services.Configure<PluginHealthExecutionOptions>(
+    builder.Configuration.GetSection("Health"));
+builder.Services.AddSingleton<PluginHealthExecutor>();
 builder.Services.AddAuthKitCore();
 
 builder.Services.ConfigureApp(builder.Configuration, plugins)

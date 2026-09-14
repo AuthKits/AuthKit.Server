@@ -56,15 +56,19 @@ public static class EndpointConfiguration
         app.MapControllers();
         PluginApplicationConfiguration.MapEndpoints(app, plugins);
 
-        app.MapGet("/health", async (HttpContext context, IJwtKeyStore keyStore, IReadOnlyList<LoadedPlugin> plugins) =>
+        app.MapGet("/health", async (
+            HttpContext context,
+            IJwtKeyStore keyStore,
+            IReadOnlyList<LoadedPlugin> plugins,
+            PluginHealthExecutor healthExecutor) =>
         {
             var keyStoreHealthy = keyStore.GetPublicJwks().Any();
 
             var pluginResults = new Dictionary<string, IReadOnlyList<PluginHealthResult>>();
             foreach (var lp in plugins)
-                pluginResults[lp.Plugin.Name] = await lp.Plugin.CheckHealthAsync(
-                    context.RequestServices,
-                    context.RequestAborted);
+                pluginResults[lp.Plugin.Name] = (await healthExecutor.ExecuteAsync(
+                    lp,
+                    context.RequestAborted)).Results.ToArray();
 
             var pluginStatus = pluginResults.Values
                 .SelectMany(results => results)

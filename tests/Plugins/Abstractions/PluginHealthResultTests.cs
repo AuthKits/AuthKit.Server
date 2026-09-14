@@ -24,6 +24,7 @@ public sealed class PluginHealthResultTests
         Assert.Equal(PluginHealthStatus.Healthy, result.Status);
         Assert.Null(result.Reason);
         Assert.Null(result.Data);
+        Assert.Null(result.Tags);
     }
 
     [Fact]
@@ -36,7 +37,8 @@ public sealed class PluginHealthResultTests
             {
                 ["dependency"] = "cache",
                 ["retry_count"] = 2
-            });
+            },
+            ["cache", "readiness"]);
 
         var json = JsonSerializer.Serialize(result);
         var restored = JsonSerializer.Deserialize<PluginHealthResult>(json);
@@ -44,9 +46,24 @@ public sealed class PluginHealthResultTests
         Assert.NotNull(restored);
         Assert.Equal(PluginHealthStatus.Degraded, restored.Status);
         Assert.Equal("Cache is unavailable", restored.Reason);
+        Assert.Equal(["cache", "readiness"], restored.Tags);
         Assert.NotNull(restored.Data);
         Assert.Equal("cache", restored.Data["dependency"].ToString());
         Assert.Equal("2", restored.Data["retry_count"].ToString());
+    }
+
+    [Fact]
+    public void Tags_RemainDistinctFromStatusAndDiagnosticData()
+    {
+        var result = new PluginHealthResult(
+            PluginHealthStatus.Unhealthy,
+            "Database is unavailable.",
+            new Dictionary<string, object> { ["status"] = "healthy" },
+            ["database", "critical"]);
+
+        Assert.Equal(PluginHealthStatus.Unhealthy, result.Status);
+        Assert.Equal(["database", "critical"], result.Tags);
+        Assert.Equal("healthy", result.Data!["status"]);
     }
 
     [Fact]

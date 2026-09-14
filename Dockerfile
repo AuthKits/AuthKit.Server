@@ -36,8 +36,9 @@ FROM build AS publish
 WORKDIR /src
 RUN dotnet publish "src/Host/Host.csproj" -c Release -o /app/publish
 RUN dotnet publish "src/Plugins/Solutions/DevTokens/DevTokens.csproj" -c Release -o /app/publish/plugins/DevTokens
-RUN dotnet publish "src/Plugins/Solutions/DevTools/DevTools.csproj" -c Release -o /app/publish/plugins/DevTools
 COPY src/Plugins/Solutions/DevTokens/manifest.json /app/publish/plugins/DevTokens/manifest.json
+
+RUN dotnet publish "src/Plugins/Solutions/DevTools/DevTools.csproj" -c Release -o /app/publish/plugins/DevTools
 COPY src/Plugins/Solutions/DevTools/manifest.json /app/publish/plugins/DevTools/manifest.json
 
 FROM base AS final

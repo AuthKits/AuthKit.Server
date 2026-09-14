@@ -126,6 +126,8 @@ public sealed class PluginHealthEndpointTests
         builder.Services.AddControllers();
         builder.Services.AddSingleton<IJwtKeyStore>(new StubKeyStore(keyStoreHealthy));
         builder.Services.AddSingleton(plugins);
+        builder.Services.Configure<PluginHealthExecutionOptions>(_ => { });
+        builder.Services.AddSingleton<PluginHealthExecutor>();
 
         var app = builder.Build();
         app.MapAppEndpoints(plugins);

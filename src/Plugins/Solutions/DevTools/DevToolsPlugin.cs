@@ -81,18 +81,48 @@ public sealed class DevToolsPlugin : IAuthKitPlugin
         var catalog = services.GetService<IGrpcServiceCatalog>();
         if (catalog is null)
             return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
-                [new(PluginHealthStatus.Unhealthy, "gRPC service catalog is unavailable.")]);
+            [
+                new(
+                    PluginHealthStatus.Unhealthy,
+                    "gRPC service catalog is unavailable.",
+                    new Dictionary<string, object>
+                    {
+                        ["dependency"] = "grpc_service_catalog",
+                        ["available"] = false
+                    },
+                    ["grpc", "dependency", "critical"])
+            ]);
 
         try
         {
             _ = catalog.GetServices();
             return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
-                [new(PluginHealthStatus.Healthy, "gRPC service catalog is available.")]);
+            [
+                new(
+                    PluginHealthStatus.Healthy,
+                    "gRPC service catalog is available.",
+                    new Dictionary<string, object>
+                    {
+                        ["dependency"] = "grpc_service_catalog",
+                        ["available"] = true
+                    },
+                    ["grpc", "dependency", "readiness"])
+            ]);
         }
         catch
         {
             return Task.FromResult<IReadOnlyList<PluginHealthResult>>(
-                [new(PluginHealthStatus.Unhealthy, "gRPC service catalog is unavailable.")]);
+            [
+                new(
+                    PluginHealthStatus.Unhealthy,
+                    "gRPC service catalog is unavailable.",
+                    new Dictionary<string, object>
+                    {
+                        ["dependency"] = "grpc_service_catalog",
+                        ["available"] = false
+                    },
+                    ["grpc", "dependency", "critical"])
+            ]);
         }
     }
 }
