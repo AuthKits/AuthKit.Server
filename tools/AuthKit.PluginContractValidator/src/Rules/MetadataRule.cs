@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 
 namespace AuthKit.PluginContractValidator.Rules;
 
@@ -10,8 +11,8 @@ namespace AuthKit.PluginContractValidator.Rules;
 /// Ensures plugin metadata (Name, Version) is present and well-formed.
 /// </summary>
 /// <remarks>
-/// The rule verifies that <see cref="IAuthKitPlugin.Name"/> is non-empty and that
-/// <see cref="IAuthKitPlugin.Version"/> follows the SemVer
+/// The rule verifies that <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.Name"/> is non-empty and that
+/// <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.Version"/> follows the SemVer
 /// (<c>major.minor.patch[-prerelease]</c>) format expected by the host.
 /// </remarks>
 public sealed class MetadataRule : IPluginContractRule

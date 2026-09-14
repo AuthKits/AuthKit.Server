@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -16,7 +17,7 @@ namespace AuthKit.PluginContractValidator.Rules;
 /// </summary>
 /// <remarks>
 /// The rule builds an isolated service provider from the services registered
-/// by the plugin and invokes <see cref="IAuthKitPlugin.CheckHealthAsync"/>.
+/// by the plugin and invokes <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.CheckHealthAsync"/>.
 /// Basic framework services the host would provide, such as logging, are
 /// registered so plugins can rely on them. Any exception during service
 /// configuration or health checking is reported as a contract violation.

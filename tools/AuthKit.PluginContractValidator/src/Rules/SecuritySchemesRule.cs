@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
 namespace AuthKit.PluginContractValidator.Rules;
@@ -13,7 +14,7 @@ namespace AuthKit.PluginContractValidator.Rules;
 /// </summary>
 /// <remarks>
 /// The rule verifies that each key in the dictionary returned by
-/// <see cref="IAuthKitPlugin.GetSecuritySchemes"/> matches the <c>Name</c> of its
+/// <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.GetSecuritySchemes"/> matches the <c>Name</c> of its
 /// <see cref="AuthKitSecuritySchemeDescriptor"/>.
 /// </remarks>
 public sealed class SecuritySchemesRule : IPluginContractRule
