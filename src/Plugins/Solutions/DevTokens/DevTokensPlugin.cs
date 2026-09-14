@@ -82,14 +82,36 @@ public sealed class DevTokensPlugin : IAuthKitPlugin
         cancellationToken.ThrowIfCancellationRequested();
         var store = services.GetService<IDocumentStore>();
         if (store is null)
-            return [new(PluginHealthStatus.Unhealthy, "Document store is unavailable.")];
+            return
+            [
+                new(
+                    PluginHealthStatus.Unhealthy,
+                    "Document store is unavailable.",
+                    new Dictionary<string, object>
+                    {
+                        ["dependency"] = "document_store",
+                        ["available"] = false
+                    },
+                    ["database", "dependency", "critical"])
+            ];
 
         try
         {
             await using var session = store.LightweightSession();
             await session.Query<DeveloperToken>().Take(1).ToListAsync(token: cancellationToken);
             cancellationToken.ThrowIfCancellationRequested();
-            return [new(PluginHealthStatus.Healthy, "Developer token store is available.")];
+            return
+            [
+                new(
+                    PluginHealthStatus.Healthy,
+                    "Developer token store is available.",
+                    new Dictionary<string, object>
+                    {
+                        ["dependency"] = "document_store",
+                        ["available"] = true
+                    },
+                    ["database", "dependency", "readiness"])
+            ];
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
@@ -97,7 +119,18 @@ public sealed class DevTokensPlugin : IAuthKitPlugin
         }
         catch
         {
-            return [new(PluginHealthStatus.Unhealthy, "Developer token store is unavailable.")];
+            return
+            [
+                new(
+                    PluginHealthStatus.Unhealthy,
+                    "Developer token store is unavailable.",
+                    new Dictionary<string, object>
+                    {
+                        ["dependency"] = "document_store",
+                        ["available"] = false
+                    },
+                    ["database", "dependency", "critical"])
+            ];
         }
     }
 
