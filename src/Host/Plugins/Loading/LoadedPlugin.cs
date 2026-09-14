@@ -1,7 +1,7 @@
 using System.Reflection;
 using AuthKit.Plugins.Abstractions.Contracts;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Loading;
 
 /// <summary>
 /// Represents a plugin loaded from disk together with its contract instance,

@@ -1,6 +1,6 @@
 using AuthKit.Plugins.Abstractions.Models;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Health.Models;
 
 /// <summary>
 /// Stores a completed plugin health execution until its cache expiry time.

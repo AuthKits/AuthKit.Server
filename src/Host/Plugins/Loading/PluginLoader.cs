@@ -3,9 +3,10 @@ using System.Runtime.Loader;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Models;
+using Host.Plugins.Contract;
 using Microsoft.Extensions.Logging;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Loading;
 
 /// <summary>
 /// Discovers and loads AuthKit plugins from specified directory during host startup.

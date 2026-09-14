@@ -1,6 +1,6 @@
 using AuthKit.Plugins.Abstractions.Models;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Health.Models;
 
 /// <summary>
 /// Represents plugin health execution together with host observed duration.

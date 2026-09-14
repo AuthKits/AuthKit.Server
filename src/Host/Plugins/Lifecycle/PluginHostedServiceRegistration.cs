@@ -1,4 +1,6 @@
-namespace Host.Plugins;
+using Host.Plugins.Loading;
+
+namespace Host.Plugins.Lifecycle;
 
 /// <summary>
 /// Registers plugin lifecycle orchestration and plugin owned hosted services.

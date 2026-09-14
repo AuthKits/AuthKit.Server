@@ -2,7 +2,7 @@ using System.Reflection;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Configuration;
 
 /// <summary>
 /// Selects and invokes one compatible plugin configuration overload.

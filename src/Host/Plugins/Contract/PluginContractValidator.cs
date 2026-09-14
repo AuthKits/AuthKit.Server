@@ -3,7 +3,7 @@ using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Microsoft.Extensions.Logging;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Contract;
 
 /// <summary>
 /// Validates AuthKit plugin contracts against the host's supported capabilities.

@@ -1,6 +1,7 @@
 using AuthKit.Plugins.Abstractions.Contracts;
+using Host.Plugins.Loading;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Lifecycle;
 
 /// <summary>
 /// Bridges plugin lifecycle hooks to the standard .NET host lifecycle.

@@ -1,8 +1,9 @@
 using System.Reflection;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
+using Host.Plugins.Loading;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Configuration;
 
 /// <summary>
 /// Applies plugin endpoint and application pipeline hooks deterministically.

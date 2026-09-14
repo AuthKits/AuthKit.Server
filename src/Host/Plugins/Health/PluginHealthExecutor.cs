@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using AuthKit.Plugins.Abstractions.Models;
+using Host.Plugins.Loading;
+using Host.Plugins.Health.Models;
 using Microsoft.Extensions.Options;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Health;
 
 /// <summary>
 /// Executes plugin health checks in disposable scopes and caches completed results.

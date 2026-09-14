@@ -1,6 +1,6 @@
 using AuthKit.Plugins.Abstractions.Models;
 
-namespace Host.Plugins;
+namespace Host.Plugins.Health;
 
 /// <summary>
 /// Configures host side plugin health execution and result caching.
