@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
-using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -49,7 +48,7 @@ public sealed class HealthRule : IPluginContractRule
 
         try
         {
-            plugin.Instance.ConfigureServices(services, configuration);
+            PluginConfigurationInvoker.Configure(plugin.Instance, services, configuration);
         }
         catch (Exception ex)
         {
