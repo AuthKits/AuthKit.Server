@@ -16,6 +16,7 @@ using Microsoft.OpenApi;
 using Swashbuckle.AspNetCore.Swagger;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using Xunit;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace AuthKit.Host.Tests;
 

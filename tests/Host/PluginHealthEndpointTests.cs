@@ -15,6 +15,7 @@ using Microsoft.IdentityModel.Tokens;
 using PluginMetadataAttribute = AuthKit.Plugins.Abstractions.Contracts.Plugins.PluginMetadataAttribute;
 using Xunit;
 using Host.Plugins.Health;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace AuthKit.Host.Tests;
 
