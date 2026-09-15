@@ -1,4 +1,5 @@
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 
 namespace AuthKit.Plugins.Abstractions.Models;
@@ -13,7 +14,7 @@ namespace AuthKit.Plugins.Abstractions.Models;
 /// </para>
 /// <para>
 /// The manifest mirrors selected runtime metadata exposed by
-/// <see cref="IAuthKitPlugin"/> while remaining independent of a plugin instance.
+/// <see cref="Contracts.PluginContract.IAuthKitPlugin"/> while remaining independent of a plugin instance.
 /// This allows the host to perform pre-activation validation without loading
 /// or activating the plugin.
 /// </para>

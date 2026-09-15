@@ -10,7 +10,7 @@ namespace AuthKit.Plugins.Abstractions.Contracts.Plugins;
 public static class PluginExtensions
 {
     /// <param name="plugin">The plugin whose configuration section is used.</param>
-    extension(IAuthKitPlugin plugin)
+    extension(PluginContract.IAuthKitPlugin plugin)
     {
         /// <summary>
         /// Binds strongly typed options from the plugin's configuration section.

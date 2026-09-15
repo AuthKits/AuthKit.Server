@@ -1,5 +1,5 @@
 using System;
-using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using Xunit;
 
 namespace AuthKit.Plugins.Abstractions.Tests.SecuritySchemes;

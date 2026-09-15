@@ -6,6 +6,7 @@ using Host.Plugins.Health;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Xunit;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace AuthKit.Host.Tests;
 

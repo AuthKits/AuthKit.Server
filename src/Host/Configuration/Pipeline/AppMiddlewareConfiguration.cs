@@ -4,6 +4,7 @@ using Host.Restful.Middleware.Exceptions;
 using Host.Security.Middleware;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 
 namespace Host.Configuration.Pipeline;
 
@@ -19,7 +20,7 @@ namespace Host.Configuration.Pipeline;
 /// <para>
 /// New pipeline hooks are inserted at their strongly typed
 /// <see cref="PluginPipelinePosition"/>. Plugins at the same position are
-/// ordered by stable plugin ID. Legacy <see cref="IAuthKitPlugin.MiddlewareType"/>
+/// ordered by stable plugin ID. Legacy <see cref="AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.MiddlewareType"/>
 /// middleware remains in its original slot unless the plugin opts into a new
 /// application or pipeline hook.
 /// </para>

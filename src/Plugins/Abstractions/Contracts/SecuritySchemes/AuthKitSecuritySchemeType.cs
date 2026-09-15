@@ -1,6 +1,4 @@
-using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
-
-namespace AuthKit.Plugins.Abstractions;
+namespace AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 
 /// <summary>
 /// Specifies the authentication mechanism represented by an AuthKit security scheme.

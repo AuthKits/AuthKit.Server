@@ -14,8 +14,8 @@ using DevTokens.UseCase.Commands.Requests;
 using DevTokens.UseCase.Commands.Validations;
 using Marten;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace DevTokens;
 
@@ -56,10 +56,10 @@ public sealed class DevTokensPlugin : IAuthKitPlugin
     /// and authorization components in the dependency injection container.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> used to register plugin services.</param>
-    /// <param name="configuration">Application configuration used to configure <see cref="AuthKitOptions"/>.</param>
-    public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    /// <param name="context">Stable plugin context including the plugin-scoped configuration section.</param>
+    public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context)
     {
-        services.Configure<AuthKitOptions>(configuration.GetSection("AuthKit"));
+        services.Configure<AuthKitOptions>(context.Configuration);
 
         services.AddScoped<IDeveloperTokenValidator, DeveloperTokenValidatorService>();
         services.AddScoped<IDeveloperTokenManager, DeveloperTokenManager>();

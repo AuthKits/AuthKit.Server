@@ -1,6 +1,7 @@
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using Xunit;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace AuthKit.Plugins.Abstractions.Tests;
 

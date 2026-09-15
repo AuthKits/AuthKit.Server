@@ -14,7 +14,7 @@ public static class PluginMetadataExtensions
     /// <param name="plugin">The plugin instance.</param>
     /// <returns>An immutable <see cref="PluginMetadata"/> record.</returns>
     /// <exception cref="ArgumentNullException">Thrown if the plugin is null.</exception>
-    public static PluginMetadata GetMetadata(this IAuthKitPlugin plugin)
+    public static PluginMetadata GetMetadata(this PluginContract.IAuthKitPlugin plugin)
     {
         ArgumentNullException.ThrowIfNull(plugin);
 

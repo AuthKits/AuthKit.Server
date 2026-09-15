@@ -6,6 +6,7 @@ using System.Runtime.Loader;
 using System.Threading;
 using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace AuthKit.PluginContractValidator;
 

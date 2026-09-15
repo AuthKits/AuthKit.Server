@@ -19,7 +19,7 @@ public sealed class RegistrationRule : IPluginContractRule
     public string Name => "Registration";
 
     /// <summary>
-    /// Invokes <see cref="IAuthKitPlugin.ConfigureServices"/> against a fresh service collection
+    /// Invokes <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.ConfigureServices"/> against a fresh service collection
     /// and then builds the <see cref="plugin"/> to confirm the dependency graph is
     /// constructible.
     /// </summary>
@@ -39,7 +39,7 @@ public sealed class RegistrationRule : IPluginContractRule
 
         try
         {
-            plugin.Instance.ConfigureServices(services, configuration);
+            PluginConfigurationInvoker.Configure(plugin.Instance, services, configuration);
         }
         catch (Exception ex)
         {

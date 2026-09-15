@@ -8,6 +8,7 @@ using DevTools.Middleware;
 using DevTools.Runtime;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace DevTools;
 
@@ -51,10 +52,10 @@ public sealed class DevToolsPlugin : IAuthKitPlugin
     /// serving components in the dependency injection container.
     /// </summary>
     /// <param name="services">The <see cref="IServiceCollection"/> used to register plugin services.</param>
-    /// <param name="configuration">Application configuration used to configure <see cref="DevToolsOptions"/>.</param>
-    public void ConfigureServices(IServiceCollection services, IConfiguration configuration)
+    /// <param name="context">Stable plugin context including the plugin-scoped configuration section.</param>
+    public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context)
     {
-        services.Configure<DevToolsOptions>(configuration.GetSection("DevTools"));
+        services.Configure<DevToolsOptions>(context.Configuration);
 
         services.AddSingleton<IGrpcServiceCatalog, GrpcServiceCatalog>();
         services.AddSingleton<GrpcDynamicInvoker>();

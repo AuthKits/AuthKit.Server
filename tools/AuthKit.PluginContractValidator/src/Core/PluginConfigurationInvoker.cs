@@ -1,36 +1,44 @@
+using System;
 using System.Reflection;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
-namespace Host.Plugins.Configuration;
+namespace AuthKit.PluginContractValidator.Core;
 
 /// <summary>
-/// Selects and invokes one compatible plugin configuration overload.
+/// Selects and invokes the most specific <c>ConfigureServices</c> overload a plugin
+/// implements, mirroring the selection performed by the AuthKit host.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Plugins may implement any single supported <c>ConfigureServices</c> overload.
-/// The invoker picks the most specific overload implemented by the plugin instead
-/// of requiring all plugins to adopt a single signature.
+/// Plugins may implement any single supported <c>ConfigureServices</c> overload. The
+/// invoker picks the most specific one actually overridden by the plugin instead of
+/// requiring all plugins to adopt a single signature.
 /// </para>
 /// <para>
 /// The default interface implementations of <c>IAuthKitPlugin.ConfigureServices</c>
-/// forward to one another, so only the most specific overload actually overridden
-/// by the plugin is invoked.
+/// forward to one another, but the concrete method a plugin implements is only visible
+/// on the concrete type, so the overload is resolved through reflection exactly as the
+/// host resolver does.
 /// </para>
 /// </remarks>
 internal static class PluginConfigurationInvoker
 {
     /// <summary>
-    /// Invokes the most specific configuration overload implemented by a plugin.
+    /// Invokes the plugin's <c>ConfigureServices</c>, returning the service collection the
+    /// plugin registered into.
     /// </summary>
-    /// <param name="plugin">The plugin being configured.</param>
-    /// <param name="builder">The host builder used by AuthKit.</param>
-    /// <param name="configuration">The application configuration.</param>
-    public static void Configure(
+    /// <param name="plugin">The loaded plugin to configure.</param>
+    /// <param name="services">The service collection the plugin should register into.</param>
+    /// <param name="configuration">The application configuration used to build the plugin context.</param>
+    /// <returns>The service collection containing the plugin's registrations.</returns>
+    public static IServiceCollection Configure(
         IAuthKitPlugin plugin,
-        IHostApplicationBuilder builder,
+        IServiceCollection services,
         IConfiguration configuration)
     {
         var pluginType = plugin.GetType();
@@ -38,27 +46,29 @@ internal static class PluginConfigurationInvoker
         if (HasImplementation(pluginType, typeof(IServiceCollection), typeof(AuthKitPluginContext)))
         {
             plugin.ConfigureServices(
-                builder.Services,
+                services,
                 new AuthKitPluginContext(
                     plugin.Id,
                     plugin.Name,
                     plugin.GetPluginConfiguration(configuration),
                     configuration));
-            return;
+            return services;
         }
 
         if (HasImplementation(pluginType, typeof(IHostApplicationBuilder), typeof(IConfiguration)))
         {
+            var builder = Host.CreateEmptyApplicationBuilder(new HostApplicationBuilderSettings());
             plugin.ConfigureServices(builder, configuration);
-            return;
+            return builder.Services;
         }
 
-        plugin.ConfigureServices(builder.Services, configuration);
+        plugin.ConfigureServices(services, configuration);
+        return services;
     }
 
     /// <summary>
     /// Determines whether a plugin provides a concrete implementation of the
-    /// ConfigureServices overload identified by the given parameter types.
+    /// <c>ConfigureServices</c> overload identified by the given parameter types.
     /// </summary>
     /// <param name="pluginType">The plugin type to inspect.</param>
     /// <param name="parameterTypes">The parameter types that identify the overload.</param>

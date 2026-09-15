@@ -1,5 +1,6 @@
 using AuthKit.Plugins.Abstractions.Contracts;
 using Host.Plugins.Loading;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace Host.Plugins.Lifecycle;
 

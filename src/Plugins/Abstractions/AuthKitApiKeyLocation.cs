@@ -1,3 +1,5 @@
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
+
 namespace AuthKit.Plugins.Abstractions;
 
 /// <summary>

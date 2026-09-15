@@ -1,15 +1,16 @@
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 
 namespace AuthKit.PluginContractValidator.Core;
 
 /// <summary>
-/// Loads plugin entry assembly and instantiates its <see cref="IAuthKitPlugin"/> implementation.
+/// Loads plugin entry assembly and instantiates its <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin"/> implementation.
 /// </summary>
 public interface IPluginLoader
 {
     /// <summary>
     /// Loads the plugin entry assembly located at <paramref name="entryDll"/> and activates its
-    /// <see cref="IAuthKitPlugin"/> implementation.
+    /// <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin"/> implementation.
     /// </summary>
     /// <param name="entryDll">The full path to the plugin's entry assembly (named after its directory).</param>
     /// <returns>

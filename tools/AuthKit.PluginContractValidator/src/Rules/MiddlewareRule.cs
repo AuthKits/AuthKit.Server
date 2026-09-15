@@ -5,6 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using AuthKit.PluginContractValidator.Core;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using Microsoft.AspNetCore.Http;
 
 namespace AuthKit.PluginContractValidator.Rules;
@@ -25,7 +26,7 @@ public sealed class MiddlewareRule : IPluginContractRule
 
     /// <summary>
     /// Validates the middleware type contributed by
-    /// <see cref="IAuthKitPlugin.MiddlewareType"/>, if any.
+    /// <see cref="Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.MiddlewareType"/>, if any.
     /// </summary>
     public Task<IReadOnlyList<string>> ValidateAsync(
         LoadedPlugin plugin,
