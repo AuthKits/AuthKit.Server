@@ -9,6 +9,7 @@ vars:
   ASSEMBLY_FILE: '{{.USER_WORKING_DIR}}/{{.OUTPUT_DIR}}/{{.PROJECT_NAME}}.dll'  # Path to the compiled DLL
   MANIFEST_OUTPUT: '{{.USER_WORKING_DIR}}/manifest.json'  # Output path for the generated manifest
   MANIFEST_GENERATOR: ../../../../tools/AuthKit.ManifestGenerator  # Path to the manifest generator tool
+  UI_DIR: '{{.USER_WORKING_DIR}}/UI'          # Path to the TypeScript UI project
 
 env:
   DOTNET_CLI_TELEMETRY_OPTOUT: '1'  # Disables .NET CLI telemetry
@@ -20,9 +21,22 @@ tasks:
       - task --list
 
   build:
-    desc: Builds the DevTools project without restoring NuGet packages
+    desc: Builds the TypeScript UI and the DevTools project without restoring NuGet packages
     cmds:
+      - task: build-ui
       - dotnet build {{.PROJECT_FILE}} --configuration {{.CONFIGURATION}} --no-restore
+
+  build-ui:
+    desc: Installs UI dependencies and compiles the TypeScript UI into dist/ui.html
+    cmds:
+      - npm --prefix {{.UI_DIR}} ci
+      - npm --prefix {{.UI_DIR}} run typecheck
+      - npm --prefix {{.UI_DIR}} run build
+
+  watch-ui:
+    desc: Rebuilds the TypeScript UI on changes
+    cmds:
+      - npm --prefix {{.UI_DIR}} run watch
 
   clean:
     desc: Cleans the DevTools project (deletes build artifacts)
