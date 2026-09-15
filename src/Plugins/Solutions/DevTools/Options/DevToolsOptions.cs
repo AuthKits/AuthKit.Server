@@ -48,13 +48,23 @@ public sealed class DevToolsOptions
     /// <returns>
     /// The resolved target URL, for example <c>https://localhost:5001</c>.
     /// </returns>
+    /// <remarks>
+    /// The scheme mirrors the host's certificate fallback: HTTPS when the
+    /// configured certificate exists, plain HTTP/2 (h2c) otherwise so the
+    /// in-process gRPC UI can reach the host without a TLS certificate.
+    /// The same <c>DEV_CERT_PATH</c> and <c>DEV_CERT_PORT_GRPC</c> environment
+    /// variables that configure the host's Kestrel listeners are honored here.
+    /// </remarks>
     public string ResolveGrpcTarget() =>
-        GrpcTarget ??
-        (Environment.GetEnvironmentVariable("GRPC_UI_TARGET")
-            ?? $"https://localhost:{GrpcPortFromEnvironment()}");
+        GrpcTarget
+        ?? Environment.GetEnvironmentVariable("GRPC_UI_TARGET")
+        ?? $"{(UsesHttpsCertificate() ? "https" : "http")}://localhost:{GrpcPortFromEnvironment()}";
 
     private static int GrpcPortFromEnvironment() =>
         int.TryParse(Environment.GetEnvironmentVariable("DEV_CERT_PORT_GRPC"), out var port)
             ? port
             : 5001;
+
+    private static bool UsesHttpsCertificate() =>
+        File.Exists(Environment.GetEnvironmentVariable("DEV_CERT_PATH") ?? "/root/certs/devcert.pfx");
 }
