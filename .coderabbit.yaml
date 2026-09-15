@@ -1,0 +1,74 @@
+# CodeRabbit configuration
+# Docs: https://coderabbit.ai/docs/configuration
+
+language: en-US
+early_access: false
+
+reviews:
+  profile: thorough
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+
+  auto_review:
+    enabled: true
+    drafts: false
+    base: development
+
+  path_instructions:
+    - path: '**/*.cs'
+      instructions: |
+        - Match the existing style and conventions used in the file.
+        - Prefer small, focused changes over broad rewrites.
+        - Keep APIs and abstractions as simple as possible.
+        - Do not suggest architectural changes unless the existing design creates a concrete correctness, security, maintainability, or performance problem.
+        - Avoid speculative refactoring and unnecessary API churn.
+        - Flag new secrets, credentials, tokens, private keys, or hardcoded connection strings.
+        - Check authentication, authorization, token handling, cryptographic operations,
+          Keycloak integration, middleware, persistence, concurrency, and lifecycle changes carefully.
+        - Note missing or insufficient tests for security-sensitive or behavior-changing code.
+        - Mention ADR updates when public behavior, architecture, contracts, or configuration semantics change.
+        - Do not require ADR changes for purely internal refactoring or implementation details.
+
+    - path: 'src/Plugins/**'
+      instructions: |
+        - Preserve the plugin architecture and plugin boundaries.
+        - Do not bypass plugin contracts or duplicate host-level plugin infrastructure.
+        - Check plugin metadata, registration, lifecycle hooks, configuration, health checks,
+          middleware, security schemes, and dependency behavior when relevant.
+        - Flag direct coupling between plugins that bypasses defined contracts.
+        - Prefer existing AuthKit extension points over introducing parallel mechanisms.
+        - Be careful with assembly loading, reflection, dependency discovery, and plugin ordering.
+        - Consider behavior when plugins are disabled, missing, invalid, or partially configured.
+
+    - path: '**/*Tests/**/*.cs'
+      instructions: |
+        - Prefer focused tests that verify observable behavior.
+        - Check success, failure, boundary, cancellation, and concurrency cases when relevant.
+        - For security-sensitive code, include negative and bypass-oriented cases.
+        - Avoid brittle tests that depend on implementation details.
+        - Reuse existing test infrastructure and fixtures where possible.
+        - Do not request tests for trivial changes that have no meaningful behavioral impact.
+
+    - path: '**/*.csproj'
+      instructions: |
+        - Package versions must come from central package management in Directory.Packages.props.
+        - Do not add package references when existing framework or project dependencies are sufficient.
+        - Avoid unnecessary dependencies.
+        - Do not suggest dependency or target-framework changes without a concrete reason.
+
+    - path: 'Docs/ADR/**'
+      instructions: |
+        - ADRs should be numbered sequentially.
+        - New ADRs must be linked from Docs/ADR/README.md.
+        - The decision context should clearly describe the problem being solved.
+        - Document relevant alternatives and why they were not selected.
+        - Keep ADRs focused on architectural decisions rather than implementation details.
+        - Do not request ADR changes for changes that do not affect architecture, public contracts,
+          configuration semantics, or significant operational behavior.
+
+chat:
+  auto_reply: true
+  base_url: https://app.coderabbit.ai
