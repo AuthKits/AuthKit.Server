@@ -1,0 +1,57 @@
+name: Test Coverage
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main, development]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '10.0.x'
+  SOLUTION_FILE: 'AuthKit.slnx'
+
+permissions:
+  contents: read
+
+jobs:
+  coverage:
+    name: Run tests and collect coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
+      - name: Restore dependencies
+        run: dotnet restore ${{ env.SOLUTION_FILE }}
+
+      - name: Run tests and collect coverage
+        run: |
+          mkdir -p coverage
+          dotnet test ${{ env.SOLUTION_FILE }} \
+            --configuration Release \
+            --no-restore \
+            --collect:"XPlat Code Coverage" \
+            --results-directory "${{ github.workspace }}/coverage" \
+            --verbosity minimal
+
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ${{ github.workspace }}/coverage
+          fail_ci_if_error: false
+          verbose: true
