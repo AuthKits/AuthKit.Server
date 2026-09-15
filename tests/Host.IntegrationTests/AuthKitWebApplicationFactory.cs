@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
+using Wolverine.Runtime;
 
 namespace AuthKit.Host.IntegrationTests;
 
@@ -32,7 +34,36 @@ public sealed class AuthKitWebApplicationFactory : WebApplicationFactory<Program
         {
             services.RemoveAll<IKeyStoreRepository>();
             services.AddSingleton<IKeyStoreRepository, InMemoryKeyStoreRepository>();
+
+            // Wolverine's durable agent releases message-store ownership during
+            // host shutdown, which opens an Npgsql connection to the (absent,
+            // sandboxed) PostgreSQL. Flip Wolverine's test-only stop mode so the
+            // fake Marten store is never touched on dispose.
+            services.AddHostedService(_ => new WolverineQuickStop(_));
         });
+    }
+
+    /// <summary>
+    /// Applies Wolverine's test-oriented <see cref="StopMode.Quick"/> so the
+    /// runtime skips draining and releasing message-store ownership on shutdown.
+    /// </summary>
+    private sealed class WolverineQuickStop(IServiceProvider services) : IHostedService
+    {
+        private readonly IServiceProvider _services = services;
+
+        public Task StartAsync(CancellationToken cancellationToken)
+        {
+            var runtime = _services.GetRequiredService<IWolverineRuntime>();
+            if (runtime is WolverineRuntime wolverineRuntime)
+            {
+                wolverineRuntime.StopMode = StopMode.Quick;
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public Task StopAsync(CancellationToken cancellationToken)
+            => Task.CompletedTask;
     }
 
     /// <summary>

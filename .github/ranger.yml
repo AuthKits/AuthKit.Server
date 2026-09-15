@@ -1,0 +1,82 @@
+# Configuration for the Ranger maintainer bot.
+# Docs: https://reporanger.com/docs
+# App: https://github.com/marketplace/ranger
+#
+# Placeholders supported in messages:
+#   $DELAY  - the configured delay, rendered as a human-readable duration
+#   $LABEL  - the label that triggered the action
+#   $AUTHOR - the author of the issue/PR
+
+default:
+  close:
+    comment: '⚠️ This has been marked for closure in $DELAY. Please comment if you believe this is a mistake.'
+    delay: 3 days
+
+labels:
+  duplicate:
+    action: close
+    delay: 7 days
+  invalid: close
+  wontfix: close
+  completed: close
+  superseded: close
+
+  'merge when passing': merge
+  approved: merge
+
+  remind:
+    action: comment
+    delay: 1d
+    message: "You asked me to remind you about this $DELAY ago."
+
+# Labels automatically applied to issues/PRs opened by project sponsors.
+sponsor_labels:
+  - sponsor
+  - "priority 1"
+
+# Standard comments applied when matching text appears in a new comment.
+comments:
+  - action: label
+    pattern: /\/remind/i
+    labels:
+      - remind
+
+  - action: delete_comment
+    pattern: /\/remind/i
+
+  - action: label
+    pattern: /duplicate of/i
+    labels:
+      - duplicate
+
+# Branch-side triggers: apply labels when a commit matches a pattern.
+commits:
+  - action: label
+    pattern: BREAKING CHANGE
+    labels:
+      - Major Version
+
+  - action: label
+    pattern: /perf.+?:/
+    labels:
+      - Major Version
+
+  - action: label
+    pattern: /feat.+?:/
+    labels:
+      - Minor Version
+
+  - action: label
+    pattern: /fix.+?:/
+    labels:
+      - Patch Version
+
+# Actions run after an issue is closed.
+closes:
+  - action: lock
+    delay: 30 days
+
+# Actions run after a PR is merged.
+merges:
+  - action: tag
+  - delete_branch
