@@ -39,7 +39,8 @@ public static class GrpcConfiguration
     /// <returns>The configured <see cref="WebApplication"/> for method chaining.</returns>
     public static WebApplication MapGrpcEndpoints(this WebApplication app)
     {
-        app.MapGrpcService<GreeterService>();
+        app.MapGrpcService<JwksService>();
+        app.MapGrpcService<MonitoringService>();
         return app;
     }
 }

@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+option csharp_namespace = "ExamplePlugin";
+
+package authkit.example;
+
+// The example greeting service definition.
+service ExampleGreeter {
+  // Sends a greeting using the plugin's configured ExampleOptions.
+  rpc SayHello (ExampleHelloRequest) returns (ExampleHelloReply);
+}
+
+// The request message containing the user's name.
+message ExampleHelloRequest {
+  string name = 1;
+}
+
+// The response message containing the greetings.
+message ExampleHelloReply {
+  string message = 1;
+}

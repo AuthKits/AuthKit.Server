@@ -1,0 +1,38 @@
+syntax = "proto3";
+option csharp_namespace = "Host.Grpc";
+package monitoring;
+import "google/protobuf/empty.proto";
+
+service Monitoring
+{
+  // Returns the aggregate health status of the host and its plugins.
+  rpc GetHealth (google.protobuf.Empty) returns (MonitoringHealthResponse);
+
+  // Returns basic process metrics such as uptime.
+  rpc GetMetrics (google.protobuf.Empty) returns (MetricsResponse);
+}
+
+message MonitoringHealthResponse {
+  string status = 1;
+  string time = 2;
+  bool jwt_key_store_healthy = 3;
+  repeated PluginHealth plugins = 4;
+}
+
+message PluginHealth {
+  string name = 1;
+  repeated PluginHealthCheck results = 2;
+}
+
+message PluginHealthCheck {
+  string status = 1;
+  string reason = 2;
+  repeated string tags = 3;
+  map<string, string> data = 4;
+}
+
+message MetricsResponse {
+  double uptime_seconds = 1;
+  int64 process_start_unix_time = 2;
+  string time = 3;
+}

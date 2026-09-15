@@ -1,0 +1,25 @@
+{
+  "Id": "authkit.example",
+  "Name": "ExamplePlugin",
+  "DisplayName": "Example Plugin",
+  "Description": "Living reference implementing the full IAuthKitPlugin contract.",
+  "Version": "1.0.0",
+  "Author": "AuthKit Contributors",
+  "License": "MIT",
+  "LicenseUrl": "https://opensource.org/licenses/MIT",
+  "Homepage": "https://example.org/example",
+  "RepositoryUrl": "https://example.org/example.git",
+  "Tags": [
+    "example",
+    "reference",
+    "template"
+  ],
+  "Priority": 100,
+  "IsEnabled": true,
+  "Capabilities": [
+    "example",
+    "reference"
+  ],
+  "MinHostVersion": "0.5.0",
+  "DependsOn": []
+}

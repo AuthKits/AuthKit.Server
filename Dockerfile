@@ -19,6 +19,8 @@ COPY ["src/Plugins/Solutions/DevTokens/DevTokens.csproj", "src/Plugins/Solutions
 COPY ["src/Plugins/Solutions/DevTools/DevTools.csproj", "src/Plugins/Solutions/DevTools/"]
 COPY ["src/Plugins/Integrations/AuthKit.Plugins.Integrations.csproj", "src/Plugins/Integrations/"]
 
+COPY ["src/Plugins/Solutions/ExamplePlugin/ExamplePlugin.csproj", "src/Plugins/Solutions/ExamplePlugin/"]
+
 COPY ["tests/Host/AuthKit.Host.Tests.csproj", "tests/Host/"]
 COPY ["tests/Host.IntegrationTests/AuthKit.Host.IntegrationTests.csproj", "tests/Host.IntegrationTests/"]
 COPY ["tests/Plugins/Abstractions/AuthKit.Plugins.Abstractions.Tests.csproj", "tests/Plugins/Abstractions/"]
@@ -40,6 +42,9 @@ COPY src/Plugins/Solutions/DevTokens/manifest.json /app/publish/plugins/DevToken
 
 RUN dotnet publish "src/Plugins/Solutions/DevTools/DevTools.csproj" -c Release -o /app/publish/plugins/DevTools
 COPY src/Plugins/Solutions/DevTools/manifest.json /app/publish/plugins/DevTools/manifest.json
+
+RUN dotnet publish "src/Plugins/Solutions/ExamplePlugin/ExamplePlugin.csproj" -c Release -o /app/publish/plugins/ExamplePlugin
+COPY src/Plugins/Solutions/ExamplePlugin/manifest.json /app/publish/plugins/ExamplePlugin/manifest.json
 
 FROM base AS final
 WORKDIR /app

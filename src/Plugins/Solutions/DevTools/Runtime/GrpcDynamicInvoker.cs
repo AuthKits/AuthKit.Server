@@ -140,7 +140,7 @@ public sealed class GrpcDynamicInvoker(
         foreach (var (key, value) in headers)
             metadata.Add(key, value);
 
-        var request = input.Parser.ParseJson(requestJson);
+        var request = input.Parser.ParseJson(string.IsNullOrWhiteSpace(requestJson) ? "{}" : requestJson);
         var options = new CallOptions(metadata, cancellationToken: cancellationToken);
 
         var invoker = _channel.Value.CreateCallInvoker();

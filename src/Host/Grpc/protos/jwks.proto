@@ -1,0 +1,67 @@
+syntax = "proto3";
+option csharp_namespace = "Host.Grpc";
+package jwks;
+import "google/protobuf/empty.proto";
+
+service Jwks
+{
+  // Returns all active public signing keys in JWKS format.
+  rpc GetJwks (google.protobuf.Empty) returns (JwksResponse);
+
+  // Returns single key by key id.
+  rpc GetKeyByKid (KeyLookupRequest) returns (SingleKeyResponse);
+
+  // Returns the health status of the JWKS key store.
+  rpc GetJwksHealth (google.protobuf.Empty) returns (HealthResponse);
+
+  // Returns key store statistics used for monitoring.
+  rpc GetJwksStats (google.protobuf.Empty) returns (KeyStoreStatsResponse);
+}
+
+message KeyLookupRequest {
+  string kid = 1;
+}
+
+message JwksResponse {
+  repeated Jwk keys = 1;
+}
+
+message Jwk {
+  string kty = 1;
+  string use = 2;
+  string kid = 3;
+  string alg = 4;
+  string n = 5;
+  string e = 6;
+  repeated string x5c = 7;
+}
+
+message SingleKeyResponse {
+  Jwk key = 1;
+  KeyMetadata metadata = 2;
+}
+
+message KeyMetadata {
+  string kid = 1;
+  string created_at = 2;
+  bool revoked = 3;
+  string algorithm = 4;
+  string purpose = 5;
+}
+
+message HealthResponse {
+  string status = 1;
+  int32 available_keys = 2;
+  string active_key_id = 3;
+  string active_key_created_at = 4;
+  map<string, string> details = 5;
+  string timestamp = 6;
+}
+
+message KeyStoreStatsResponse {
+  int32 total_keys = 1;
+  string oldest_key_age = 2;
+  string newest_key_age = 3;
+  repeated string key_ids = 4;
+  string timestamp = 5;
+}
