@@ -61,6 +61,20 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build plugin UIs
+        run: |
+          for pkg in $(find src/Plugins -name package.json -not -path '*/node_modules/*'); do
+            ui=$(dirname "$pkg")
+            echo "Building UI: $ui"
+            npm --prefix "$ui" ci
+            npm --prefix "$ui" run build
+          done
+
       - name: Restore dependencies
         run: dotnet restore ${{ env.SOLUTION_FILE }}
 
@@ -133,6 +147,20 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build plugin UIs
+        run: |
+          for pkg in $(find src/Plugins -name package.json -not -path '*/node_modules/*'); do
+            ui=$(dirname "$pkg")
+            echo "Building UI: $ui"
+            npm --prefix "$ui" ci
+            npm --prefix "$ui" run build
+          done
 
       - name: Restore dependencies
         run: dotnet restore ${{ env.SOLUTION_FILE }}

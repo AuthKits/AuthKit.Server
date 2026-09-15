@@ -37,6 +37,20 @@ jobs:
         with:
           dotnet-version: ${{ env.DOTNET_VERSION }}
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build plugin UIs
+        run: |
+          for pkg in $(find src/Plugins -name package.json -not -path '*/node_modules/*'); do
+            ui=$(dirname "$pkg")
+            echo "Building UI: $ui"
+            npm --prefix "$ui" ci
+            npm --prefix "$ui" run build
+          done
+
       - name: Publish plugins
         run: |
           mkdir -p "${{ env.PLUGINS_STAGING }}"
