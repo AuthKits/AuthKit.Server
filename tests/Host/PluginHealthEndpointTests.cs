@@ -5,6 +5,7 @@ using AuthKit.Plugins.Abstractions.Models;
 using Core.KeyManagement.DTO;
 using Core.KeyManagement.Interfaces;
 using Host.Configuration.Pipeline;
+using Host.Monitoring;
 using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -130,6 +131,7 @@ public sealed class PluginHealthEndpointTests
         builder.Services.AddSingleton(plugins);
         builder.Services.Configure<PluginHealthExecutionOptions>(_ => { });
         builder.Services.AddSingleton<PluginHealthExecutor>();
+        builder.Services.AddSingleton<HealthReportService>();
 
         var app = builder.Build();
         app.MapAppEndpoints(plugins);
