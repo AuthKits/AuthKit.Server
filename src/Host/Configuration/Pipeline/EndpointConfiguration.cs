@@ -1,9 +1,10 @@
-﻿using System.Diagnostics;
-using AuthKit.Plugins.Abstractions.Models;
-using Core.KeyManagement.Interfaces;
+﻿using AuthKit.Plugins.Abstractions.Models;
+using Host.Monitoring;
 using Host.Plugins.Loading;
 using Host.Plugins.Configuration;
-using Host.Plugins.Health;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Routing;
 
 namespace Host.Configuration.Pipeline;
 
@@ -59,41 +60,22 @@ public static class EndpointConfiguration
         PluginApplicationConfiguration.MapEndpoints(app, plugins);
 
         app.MapGet("/health", async (
-            HttpContext context,
-            IJwtKeyStore keyStore,
-            IReadOnlyList<LoadedPlugin> plugins,
-            PluginHealthExecutor healthExecutor) =>
+            [FromServices] HealthReportService healthReportService) =>
         {
-            var keyStoreHealthy = keyStore.GetPublicJwks().Any();
+            var report = await healthReportService.BuildAsync();
+            var healthy = report.Status == nameof(PluginHealthStatus.Healthy);
 
-            var pluginResults = new Dictionary<string, IReadOnlyList<PluginHealthResult>>();
-            foreach (var lp in plugins)
-                pluginResults[lp.Plugin.Name] = (await healthExecutor.ExecuteAsync(
-                    lp,
-                    context.RequestAborted)).Results.ToArray();
-
-            var pluginStatus = pluginResults.Values
-                .SelectMany(results => results)
-                .Select(result => result.Status)
-                .DefaultIfEmpty(PluginHealthStatus.Healthy)
-                .Max();
-            var status = keyStoreHealthy
-                ? pluginStatus
-                : PluginHealthStatus.Unhealthy;
-            var healthy = status == PluginHealthStatus.Healthy;
-
-            return Results.Json(new
-            {
-                status = status.ToString(),
-                time = DateTime.UtcNow,
-                jwtKeyStore = keyStoreHealthy ? "Healthy" : "Unhealthy",
-                plugins = pluginResults
-            }, statusCode: healthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
+            return Results.Json(
+                report,
+                statusCode: healthy ? StatusCodes.Status200OK : StatusCodes.Status503ServiceUnavailable);
         })
             .WithName("HealthCheck")
             .WithTags("Monitoring");
 
-        app.MapGet("/metrics", () => Results.Json(new { uptime = (DateTime.UtcNow - Process.GetCurrentProcess().StartTime).TotalSeconds }))
+        app.MapGet("/metrics", () => Results.Json(new
+        {
+            uptime = MetricsReportService.Build().UptimeSeconds
+        }))
             .WithName("Metrics")
             .WithTags("Monitoring");
 
