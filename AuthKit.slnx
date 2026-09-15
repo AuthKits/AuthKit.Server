@@ -11,6 +11,7 @@
   <Folder Name="/Plugins/Solutions/">
     <Project Path="src/Plugins/Solutions/DevTokens/DevTokens.csproj" />
     <Project Path="src/Plugins/Solutions/DevTools/DevTools.csproj" />
+    <Project Path="src/Plugins/Solutions/ExamplePlugin/ExamplePlugin.csproj" />
   </Folder>
   <Folder Name="/Plugins/Integrations/">
     <Project Path="src/Plugins/Integrations/AuthKit.Plugins.Integrations.csproj" />

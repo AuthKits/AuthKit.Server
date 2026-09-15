@@ -10,3 +10,5 @@ obj/
 qodana.yaml
 src/Plugins/Solutions/DevTokens/manifest.json
 src/Plugins/Solutions/DevTools/manifest.json
+issues/
+*.DotSettings.user
