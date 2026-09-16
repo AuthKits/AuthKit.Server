@@ -8,6 +8,7 @@ import { persistHeaders } from "./storage";
 import type { MethodDetail } from "./render";
 import type { GrpcMethodInfo, GrpcServiceInfo } from "./types";
 
+/** Creates the UI action that invokes the selected gRPC method. */
 export function createInvokeAction(
   api: GrpcApi,
   service: GrpcServiceInfo,
@@ -20,6 +21,7 @@ export function createInvokeAction(
   };
 }
 
+/** Executes an invocation and writes its progress and result to the detail view. */
 async function invoke(
   api: GrpcApi,
   service: GrpcServiceInfo,
