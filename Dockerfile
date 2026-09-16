@@ -38,7 +38,7 @@ FROM node:22 AS ui
 WORKDIR /ui
 COPY ["src/Plugins/Solutions/DevTools/UI/package.json", "src/Plugins/Solutions/DevTools/UI/package-lock.json", "./"]
 RUN npm ci
-COPY ["src/Plugins/Solutions/DevTools/UI/template.html", "src/Plugins/Solutions/DevTools/UI/build.mjs", "./"]
+COPY ["src/Plugins/Solutions/DevTools/UI/template.html", "src/Plugins/Solutions/DevTools/UI/vite.config.ts", "./"]
 COPY ["src/Plugins/Solutions/DevTools/UI/src/", "./src/"]
 RUN npm run build
 
