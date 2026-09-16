@@ -20,6 +20,6 @@
     <ProjectReference Include="..\..\Abstractions\AuthKit.Plugins.Abstractions.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="UI\ui.html" />
+    <EmbeddedResource Include="UI\dist\ui.html" LogicalName="DevTools.UI.ui.html" />
   </ItemGroup>
 </Project>
