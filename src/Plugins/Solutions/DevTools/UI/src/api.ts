@@ -10,14 +10,19 @@ export interface InvokeGrpcRequest
 
 export interface GrpcApi
 {
+  /** Loads the services and methods exposed by the DevTools catalog. */
   fetchServices(): Promise<GrpcCatalogResponse>;
+
+  /** Invokes a gRPC method through the DevTools HTTP endpoint. */
   invoke(request: InvokeGrpcRequest): Promise<InvocationResult>;
 }
 
 export class HttpGrpcApi implements GrpcApi
 {
+  /** Creates an HTTP API client rooted at the supplied DevTools path. */
   constructor(private readonly base: string) {}
 
+  /** Loads the services and methods exposed by the DevTools catalog. */
   async fetchServices(): Promise<GrpcCatalogResponse>
   {
     const response = await fetch(`${this.base}/api/services`);
@@ -31,6 +36,7 @@ export class HttpGrpcApi implements GrpcApi
     return (await response.json()) as GrpcCatalogResponse;
   }
 
+  /** Invokes a gRPC method through the DevTools HTTP endpoint. */
   async invoke(request: InvokeGrpcRequest): Promise<InvocationResult>
   {
     const response = await fetch(`${this.base}/api/invoke`, {

@@ -7,6 +7,7 @@ import type {
 
 export type StreamingKind = "uni" | "cli" | "srv" | "bidi";
 
+/** Classifies a method by its client and server streaming flags. */
 export function streamingKind(method: GrpcMethodInfo): StreamingKind
 {
   if (method.isClientStreaming && method.isServerStreaming) return "bidi";
@@ -15,6 +16,7 @@ export function streamingKind(method: GrpcMethodInfo): StreamingKind
   return "uni";
 }
 
+/** Returns a human-readable description of a method's streaming behavior. */
 export function describeStreaming(method: GrpcMethodInfo): string
 {
   if (method.isClientStreaming && method.isServerStreaming) return "Bidirectional stream";
@@ -23,6 +25,7 @@ export function describeStreaming(method: GrpcMethodInfo): string
   return "Unary";
 }
 
+/** Formats a protobuf field's type for display. */
 export function fieldTypeText(field: GrpcFieldSchema): string
 {
   if (field.isMap)
@@ -34,6 +37,7 @@ export function fieldTypeText(field: GrpcFieldSchema): string
   return field.fieldType;
 }
 
+/** Builds representative JSON values from a protobuf message schema. */
 export function jsonFromSchema(msg: GrpcMessageSchema, depth = 0): Record<string, unknown>
 {
   const out: Record<string, unknown> = {};
@@ -59,6 +63,7 @@ export function jsonFromSchema(msg: GrpcMessageSchema, depth = 0): Record<string
   return out;
 }
 
+/** Parses newline-separated metadata headers into a key-value record. */
 export function parseHeaders(text: string): Record<string, string>
 {
   const headers: Record<string, string> = {};
@@ -73,6 +78,7 @@ export function parseHeaders(text: string): Record<string, string>
   return headers;
 }
 
+/** Pretty-prints JSON-compatible input and preserves invalid JSON text. */
 export function prettyPrint(text: unknown): string
 {
   if (typeof text === "string")
@@ -86,6 +92,7 @@ export function prettyPrint(text: unknown): string
   return String(text ?? "");
 }
 
+/** Formats an invocation response, error detail, and trailers for display. */
 export function formatInvocationOutput(body: InvocationResult): string
 {
   const parts: string[] = [];
@@ -106,6 +113,7 @@ export function formatInvocationOutput(body: InvocationResult): string
   return parts.length > 0 ? parts.join("\n\n") : "(no response body)";
 }
 
+/** Converts an unknown thrown value into a displayable message. */
 export function errorMessage(err: unknown): string
 {
   return err instanceof Error ? err.message : String(err);

@@ -18,6 +18,7 @@ const options = {
   outfile: join(root, "dist", "bundle.js"),
 };
 
+/** Writes the HTML template with the latest compiled bundle inlined. */
 async function inlineBundle() {
   const [template, bundle] = await Promise.all([
     readFile(join(root, "template.html"), "utf8"),
@@ -28,9 +29,19 @@ async function inlineBundle() {
 }
 
 if (watch) {
-  const ctx = await context(options);
+  const ctx = await context({
+    ...options,
+    plugins: [{
+      name: "inline-bundle",
+      /** Registers HTML inlining after each successful esbuild run. */
+      setup(build) {
+        build.onEnd(async (result) => {
+          if (result.errors.length === 0) await inlineBundle();
+        });
+      },
+    }],
+  });
   await ctx.watch();
-  await inlineBundle();
   console.log("Watching for changes…");
 } else {
   await build(options);

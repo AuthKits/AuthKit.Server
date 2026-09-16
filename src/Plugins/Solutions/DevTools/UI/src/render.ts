@@ -12,10 +12,13 @@ export interface MethodDetail
 {
   readonly request: HTMLTextAreaElement;
   readonly headers: HTMLTextAreaElement;
+  /** Updates the visible invocation status. */
   setStatus(state: "idle" | "ok" | "err", text: string): void;
+  /** Replaces the visible invocation response. */
   writeResponse(text: string): void;
 }
 
+/** Renders the service and method navigation list. */
 export function renderServiceList(
   container: HTMLElement,
   services: readonly GrpcServiceInfo[],
@@ -64,6 +67,7 @@ export function renderServiceList(
   }
 }
 
+/** Applies the active style to the selected method. */
 export function highlightSelectedMethod(selected: SelectedIndex | null): void
 {
   for (const item of document.querySelectorAll<HTMLLIElement>(".methods li")) {
@@ -74,6 +78,7 @@ export function highlightSelectedMethod(selected: SelectedIndex | null): void
   }
 }
 
+/** Renders schemas and invocation controls for a method. */
 export function renderMethodDetail(
   container: HTMLElement,
   method: GrpcMethodInfo,
@@ -125,12 +130,14 @@ export function renderMethodDetail(
   const detail: MethodDetail = {
     request,
     headers,
+    /** Updates the visible invocation status. */
     setStatus(state, text) {
       status.classList.remove("ok", "err");
       if (state === "ok" || state === "err") status.classList.add(state);
       status.hidden = false;
       status.textContent = text;
     },
+    /** Replaces the visible invocation response. */
     writeResponse(text) {
       response.hidden = false;
       response.textContent = text;
@@ -140,6 +147,7 @@ export function renderMethodDetail(
   invokeButton.addEventListener("click", () => onInvoke(detail));
 }
 
+/** Creates a consistently styled empty-state message. */
 function emptyMessage(text: string): HTMLDivElement
 {
   const message = el("div", "empty", text);
@@ -147,6 +155,7 @@ function emptyMessage(text: string): HTMLDivElement
   return message;
 }
 
+/** Creates a card heading with optional appended nodes. */
 function heading(text: string, additions: Node[] = []): HTMLHeadingElement
 {
   const h = el("h2");
@@ -154,6 +163,7 @@ function heading(text: string, additions: Node[] = []): HTMLHeadingElement
   return h;
 }
 
+/** Wraps content nodes in a standard card. */
 function card(h: HTMLHeadingElement, bodyNodes: (Node | string)[]): HTMLDivElement
 {
   const card = el("div", "card");
@@ -163,6 +173,7 @@ function card(h: HTMLHeadingElement, bodyNodes: (Node | string)[]): HTMLDivEleme
   return card;
 }
 
+/** Renders a protobuf field and its nested fields. */
 function renderField(field: GrpcFieldSchema, depth: number, into: HTMLElement): void
 {
   const row = el("div", "row-line");
@@ -184,6 +195,7 @@ function renderField(field: GrpcFieldSchema, depth: number, into: HTMLElement): 
   }
 }
 
+/** Renders a protobuf message schema. */
 function renderSchema(title: string, msg: GrpcMessageSchema | null | undefined): HTMLDivElement
 {
   const wrap = el("div");
