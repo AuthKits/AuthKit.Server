@@ -158,7 +158,7 @@ public sealed class GrpcServiceCatalog(ILogger<GrpcServiceCatalog> logger) : IGr
             return false;
         }
 
-        return true;
+        return false;
     }
 
     private static GrpcMethodInfo BuildMethodInfo(MethodDescriptor method,

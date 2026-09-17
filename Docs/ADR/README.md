@@ -77,6 +77,7 @@ The table below shows the architecture areas and their current scope.
 | [ADR-024](./024-plugin-lifecycle-and-hosted-services.md) | Bridge Plugin Lifecycle Hooks To The Standard .NET Host Lifecycle | Plugins | accepted | 2026-09-12 |
 | [ADR-025](./025-plugin-options-openapi-and-marten-integrations.md) | Keep Plugin Options, OpenAPI, And Marten Integrations Explicit | Plugins | accepted | 2026-09-12 |
 | [ADR-026](./026-plugin-authentication-and-authorization-hooks.md) | Configure Plugin Authentication And Authorization Through Host Security Infrastructure | Plugins | accepted | 2026-09-12 |
+| [ADR-027](./027-devtools-ui-typescript.md) | Compile The DevTools UI From Modular TypeScript Into A Single Embedded Resource | Plugins | accepted | 2026-09-16 |
 
 ## Relationships Between Areas
 
