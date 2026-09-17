@@ -31,6 +31,7 @@ export interface WireMessage {
 }
 
 export interface WireField {
+  Number: number;
   Name: string;
   Description?: string;
   FieldType: string;
@@ -110,6 +111,7 @@ export function normalizeMessage(wire: unknown): WireMessage {
 export function normalizeField(wire: unknown): WireField {
   const record = (wire ?? {}) as Record<string, unknown>;
   return {
+    Number: Number(pick(record, "Number", "number") ?? 0),
     Name: String(pick(record, "Name", "name") ?? ""),
     Description: optionalString(pick(record, "Description", "description")),
     FieldType: String(pick(record, "FieldType", "fieldType") ?? ""),

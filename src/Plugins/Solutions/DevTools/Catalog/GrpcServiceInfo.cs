@@ -13,6 +13,11 @@ namespace DevTools.Catalog;
 public sealed class GrpcFieldSchema
 {
     /// <summary>
+    /// Gets the field number from the source proto.
+    /// </summary>
+    public int Number { get; set; }
+
+    /// <summary>
     /// Gets the name of the field.
     /// </summary>
     public required string Name { get; set; }

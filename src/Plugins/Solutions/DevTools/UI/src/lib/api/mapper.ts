@@ -46,6 +46,7 @@ export function mapMessage(wire: WireMessage): { name: string; fullName: string;
 
 export function mapField(wire: WireField): ProtoField {
   return {
+    number: wire.Number,
     name: wire.Name,
     description: optionalString(wire.Description),
     fieldType: wire.FieldType,

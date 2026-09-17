@@ -139,8 +139,8 @@ export class DefaultProtoGenerator implements ProtoGenerator {
       lines.push(`// ${message.description}`);
     }
     lines.push(`message ${message.name} {`);
-    message.fields.forEach((field, index) => {
-      lines.push(this.renderField(field, index + 1));
+    message.fields.forEach((field) => {
+      lines.push(this.renderField(field, field.number));
     });
     lines.push("}");
     return lines.join("\n");

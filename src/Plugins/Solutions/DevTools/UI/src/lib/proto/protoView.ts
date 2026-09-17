@@ -34,13 +34,13 @@ export function formatFieldType(field: ProtoField): string {
 function renderFieldLines(fields?: ProtoField[]): string {
   if (!fields || fields.length === 0) return "";
   return fields
-    .map((f, i) => {
+    .map((f) => {
       let typeName = formatFieldType(f);
       if (f.repeated) typeName = `repeated ${typeName}`;
       if (f.map) {
         typeName = `map<${f.mapKeyType ?? "string"}, ${f.mapValueType ?? typeName}>`;
       }
-      return `  ${typeName} ${f.name} = ${i + 1};`;
+      return `  ${typeName} ${f.name} = ${f.number};`;
     })
     .join("\n");
 }

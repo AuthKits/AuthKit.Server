@@ -195,6 +195,7 @@ public sealed class GrpcServiceCatalog(ILogger<GrpcServiceCatalog> logger) : IGr
     {
         var schema = new GrpcFieldSchema
         {
+            Number = field.FieldNumber,
             Name = field.Name,
             Description = comments.TryGetValue($"{field.ContainingType.Name}.{field.Name}", out var summary)
                 ? summary

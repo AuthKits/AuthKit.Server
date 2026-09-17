@@ -7,6 +7,7 @@ export type JSONValue =
   | { [key: string]: JSONValue };
 
 export interface ProtoField {
+  number: number;
   name: string;
   description?: string;
   fieldType: string;

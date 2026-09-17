@@ -1,3 +1,5 @@
+using System.Net;
+
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Grpc.Core;
@@ -188,23 +190,44 @@ public sealed class GrpcDynamicInvoker(
     {
         var target = options.Value.ResolveGrpcTarget();
 
-        // The host falls back to plain HTTP/2 (h2c) when no dev certificate is
-        // present. gRPC over an unencrypted connection requires this switch.
-        if (target.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            AppContext.SetSwitch(
-                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
-                true);
-        }
-
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
+        // The host falls back to plain HTTP/2 (h2c) when no dev certificate is
+        // present. gRPC over an unencrypted connection requires this switch.
+        // H2C is only enabled for loopback targets to prevent sending caller-supplied
+        // credentials (including bearer tokens) in plaintext to remote servers.
+        if (IsLoopbackTarget(target) && target.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            AppContext.SetSwitch(
+                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
+                true);
+        }
+
         logger.LogInformation("gRPC UI channel configured for target {Target}.", target);
 
         return GrpcChannel.ForAddress(target, new GrpcChannelOptions { HttpHandler = handler });
+    }
+
+    /// <summary>
+    /// Determines whether the target URL points to a loopback address.
+    /// </summary>
+    /// <param name="target">The target URL.</param>
+    /// <returns><c>true</c> if the target is a loopback address; otherwise, <c>false</c>.</returns>
+    internal static bool IsLoopbackTarget(string target)
+    {
+        if (!Uri.TryCreate(target, UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host;
+        // Check for localhost first (doesn't parse as IP address)
+        if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Then check if it's a loopback IP address
+        return IPAddress.TryParse(host, out var ip) && IPAddress.IsLoopback(ip);
     }
 }
