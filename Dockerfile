@@ -38,7 +38,7 @@ FROM node:22 AS ui
 WORKDIR /ui
 COPY ["src/Plugins/Solutions/DevTools/UI/package.json", "src/Plugins/Solutions/DevTools/UI/package-lock.json", "./"]
 RUN npm ci
-COPY ["src/Plugins/Solutions/DevTools/UI/template.html", "src/Plugins/Solutions/DevTools/UI/vite.config.ts", "./"]
+COPY ["src/Plugins/Solutions/DevTools/UI/template.html", "src/Plugins/Solutions/DevTools/UI/vite.config.ts", "src/Plugins/Solutions/DevTools/UI/svelte.config.js", "./"]
 COPY ["src/Plugins/Solutions/DevTools/UI/src/", "./src/"]
 RUN npm run build
 
@@ -48,7 +48,7 @@ RUN dotnet publish "src/Host/Host.csproj" -c Release -o /app/publish
 RUN dotnet publish "src/Plugins/Solutions/DevTokens/DevTokens.csproj" -c Release -o /app/publish/plugins/DevTokens
 COPY src/Plugins/Solutions/DevTokens/manifest.json /app/publish/plugins/DevTokens/manifest.json
 
-COPY --from=ui /ui/dist/ui.html src/Plugins/Solutions/DevTools/UI/dist/ui.html
+COPY --from=ui /ui/dist/template.html src/Plugins/Solutions/DevTools/UI/dist/ui.html
 RUN dotnet publish "src/Plugins/Solutions/DevTools/DevTools.csproj" -c Release -o /app/publish/plugins/DevTools
 COPY src/Plugins/Solutions/DevTools/manifest.json /app/publish/plugins/DevTools/manifest.json
 

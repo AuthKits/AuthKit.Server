@@ -21,6 +21,11 @@
     <Protobuf Include="Grpc\protos\**\*.proto" ProtoRoot="Grpc" GrpcServices="Both" Access="Public" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Grpc\protos\**\*.proto">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\..\Abstractions\AuthKit.Plugins.Abstractions.csproj" />
   </ItemGroup>
 </Project>

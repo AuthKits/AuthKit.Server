@@ -9,14 +9,15 @@ services:
       - "5000:5000"  # REST HTTPS
       - "5001:5001"  # gRPC HTTPS
     depends_on:
-      - authdev-db
+      authdev-db:
+        condition: service_healthy
     volumes:
       - ./certs:/root/certs
     env_file:
       - .env
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
-      - ConnectionStrings__DefaultConnection=Host=auth-db;Port=5432;Database=AuthDev;Username=postgres;Password=postgres
+      - ConnectionStrings__DefaultConnection=Host=authdev-db;Port=5432;Database=AuthDev;Username=postgres;Password=postgres
     healthcheck:
       test: ["CMD", "curl", "-k", "-f", "https://localhost:5000/health"]
       interval: 30s
@@ -36,6 +37,11 @@ services:
       - "5434:5432"
     volumes:
       - AuthDev-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d AuthDev"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     networks:
       - db_net
 
