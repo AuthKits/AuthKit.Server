@@ -156,7 +156,9 @@ public sealed class GrpcServiceInfo
     public required string FullName { get; init; }
 
     /// <summary>
-    /// Gets the leading doc comment of the service from the source proto.
+    /// Gets the leading doc comment of the service from the source proto,
+    /// or <c>null</c> if no proto comment exists. This field is absent for
+    /// proto packages without documentation comments.
     /// </summary>
     public string? Description { get; init; }
 
@@ -172,6 +174,10 @@ public sealed class GrpcServiceInfo
 
     /// <summary>
     /// Gets a value indicating whether the service originates from a plugin.
+    /// <para>
+    /// Defaults to <c>false</c> for assemblies that are not plugins, providing
+    /// backward-compatible behavior for host services.
+    /// </para>
     /// </summary>
     public bool IsPlugin { get; init; }
 

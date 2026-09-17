@@ -39,6 +39,12 @@ public sealed class GrpcInvocationResult
 
     /// <summary>
     /// Gets the raw binary protobuf response encoded as base64 string.
+    /// <para>
+    /// This field is only populated on successful invocations; for failed
+    /// invocations it remains <c>null</c>. The base64-encoded payload is
+    /// limited to <c>int.MaxValue - 1</c> bytes (approximately 2 GB) due
+    /// to protobuf size constraints.
+    /// </para>
     /// </summary>
     public string? ResponseBase64 { get; init; }
 
