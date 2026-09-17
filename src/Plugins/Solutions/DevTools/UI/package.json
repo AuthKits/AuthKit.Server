@@ -6,7 +6,7 @@
   "description": "TypeScript UI for the AuthKit gRPC DevTools plugin.",
   "scripts": {
     "typecheck": "svelte-check --tsconfig ./tsconfig.json",
-    "build": "vite build",
+    "build": "vite build && node scripts/finalize-ui.mjs",
     "watch": "vite build --watch",
     "dev": "vite"
   },
