@@ -5,13 +5,19 @@
   "type": "module",
   "description": "TypeScript UI for the AuthKit gRPC DevTools plugin.",
   "scripts": {
-    "typecheck": "tsc --noEmit",
+    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
     "build": "vite build",
     "watch": "vite build --watch",
     "dev": "vite"
   },
   "devDependencies": {
-    "typescript": "^7.0.2",
+    "@humanspeak/svelte-motion": "^1.2.1",
+    "@sveltejs/vite-plugin-svelte": "^7.3.0",
+    "@tailwindcss/vite": "^4.3.3",
+    "svelte": "^5.57.0",
+    "svelte-check": "^4.7.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^6.0.3",
     "vite": "^8.3.0",
     "vite-plugin-singlefile": "^2.3.3"
   }
