@@ -1,4 +1,4 @@
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./025-plugin-options-openapi-and-marten-integrations.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./025-plugin-options-openapi-and-marten-integrations.md) | [Next](./027-devtools-ui-typescript.md)
 
 # [ADR-026] Configure Plugin Authentication And Authorization Through Host Security Infrastructure
 
@@ -46,4 +46,4 @@ Plugin schemes and policies can protect plugin endpoints through normal ASP.NET 
 - [ADR-023](./023-plugin-application-pipeline-hooks.md) - plugin endpoints and middleware pipeline
 - [Issue #12](https://github.com/AuthKits/AuthKit.Server/issues/12) - authentication and authorization hooks
 
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./025-plugin-options-openapi-and-marten-integrations.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./025-plugin-options-openapi-and-marten-integrations.md) | [Next](./027-devtools-ui-typescript.md)

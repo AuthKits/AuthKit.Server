@@ -13,9 +13,19 @@ namespace DevTools.Catalog;
 public sealed class GrpcFieldSchema
 {
     /// <summary>
+    /// Gets the field number from the source proto.
+    /// </summary>
+    public int Number { get; set; }
+
+    /// <summary>
     /// Gets the name of the field.
     /// </summary>
     public required string Name { get; set; }
+
+    /// <summary>
+    /// Gets the leading doc comment of the field from the source proto.
+    /// </summary>
+    public string? Description { get; set; }
 
     /// <summary>
     /// Gets the protobuf field type (e.g. <c>String</c>, <c>Int32</c>, <c>Message</c>).
@@ -79,6 +89,11 @@ public sealed class GrpcMessageSchema
     public required string Name { get; init; }
 
     /// <summary>
+    /// Gets the lead doc comment of the message from the source proto.
+    /// </summary>
+    public string? Description { get; init; }
+
+    /// <summary>
     /// Gets the fully qualified name of the message.
     /// </summary>
     public required string FullName { get; init; }
@@ -103,6 +118,11 @@ public sealed class GrpcMethodInfo
     /// Gets the fully qualified method name (e.g. <c>greet.Greeter/SayHello</c>).
     /// </summary>
     public required string FullName { get; init; }
+
+    /// <summary>
+    /// Gets the leading doc comment of the method from the source proto.
+    /// </summary>
+    public string? Description { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the method is a client-streaming method.
@@ -141,6 +161,13 @@ public sealed class GrpcServiceInfo
     public required string FullName { get; init; }
 
     /// <summary>
+    /// Gets the leading doc comment of the service from the source proto,
+    /// or <c>null</c> if no proto comment exists. This field is absent for
+    /// proto packages without documentation comments.
+    /// </summary>
+    public string? Description { get; init; }
+
+    /// <summary>
     /// Gets the protobuf package the service belongs to.
     /// </summary>
     public required string Package { get; init; }
@@ -149,6 +176,15 @@ public sealed class GrpcServiceInfo
     /// Gets the name of the .proto file defining the service.
     /// </summary>
     public required string FileName { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the service originates from a plugin.
+    /// <para>
+    /// Defaults to <c>false</c> for assemblies that are not plugins, providing
+    /// backward-compatible behavior for host services.
+    /// </para>
+    /// </summary>
+    public bool IsPlugin { get; init; }
 
     /// <summary>
     /// Gets the methods exposed by the service.

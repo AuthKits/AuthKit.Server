@@ -1,3 +1,5 @@
+using System.Net;
+
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using Grpc.Core;
@@ -70,12 +72,14 @@ public sealed class GrpcDynamicInvoker(
             var response = await InvokeUnaryAsync(method, request.Headers, request.RequestJson, cancellationToken);
             stopwatch.Stop();
 
+            var responseBytes = response.ToByteArray();
             return new GrpcInvocationResult
             {
                 Success = true,
                 StatusName = nameof(StatusCode.OK),
                 StatusCode = (int)StatusCode.OK,
                 ResponseJson = JsonFormatter.Default.Format(response),
+                ResponseBase64 = Convert.ToBase64String(responseBytes),
                 ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
             };
         }
@@ -103,6 +107,32 @@ public sealed class GrpcDynamicInvoker(
                 StatusName = nameof(StatusCode.InvalidArgument),
                 StatusCode = (int)StatusCode.InvalidArgument,
                 Detail = $"Request JSON is invalid: {ex.Message}",
+                ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
+            };
+        }
+        catch (InvalidProtocolBufferException ex)
+        {
+            stopwatch.Stop();
+            return new GrpcInvocationResult
+            {
+                Success = false,
+                StatusName = nameof(StatusCode.InvalidArgument),
+                StatusCode = (int)StatusCode.InvalidArgument,
+                Detail = $"Request JSON is invalid: {ex.Message}",
+                ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
+            };
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            logger.LogWarning(ex, "Unexpected failure invoking {Method}.", method.FullName);
+
+            return new GrpcInvocationResult
+            {
+                Success = false,
+                StatusName = nameof(StatusCode.Internal),
+                StatusCode = (int)StatusCode.Internal,
+                Detail = ex.Message,
                 ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
             };
         }
@@ -158,15 +188,46 @@ public sealed class GrpcDynamicInvoker(
     /// </remarks>
     private static GrpcChannel CreateChannel(IOptions<DevToolsOptions> options, ILogger<GrpcDynamicInvoker> logger)
     {
+        var target = options.Value.ResolveGrpcTarget();
+
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
-        var target = options.Value.ResolveGrpcTarget();
+        // The host falls back to plain HTTP/2 (h2c) when no dev certificate is
+        // present. gRPC over an unencrypted connection requires this switch.
+        // H2C is only enabled for loopback targets to prevent sending caller-supplied
+        // credentials (including bearer tokens) in plaintext to remote servers.
+        if (IsLoopbackTarget(target) && target.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            AppContext.SetSwitch(
+                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
+                true);
+        }
+
         logger.LogInformation("gRPC UI channel configured for target {Target}.", target);
 
         return GrpcChannel.ForAddress(target, new GrpcChannelOptions { HttpHandler = handler });
+    }
+
+    /// <summary>
+    /// Determines whether the target URL points to a loopback address.
+    /// </summary>
+    /// <param name="target">The target URL.</param>
+    /// <returns><c>true</c> if the target is a loopback address; otherwise, <c>false</c>.</returns>
+    internal static bool IsLoopbackTarget(string target)
+    {
+        if (!Uri.TryCreate(target, UriKind.Absolute, out var uri))
+            return false;
+
+        var host = uri.Host;
+        // Check for localhost first (doesn't parse as IP address)
+        if (string.Equals(host, "localhost", StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        // Then check if it's a loopback IP address
+        return IPAddress.TryParse(host, out var ip) && IPAddress.IsLoopback(ip);
     }
 }
