@@ -1,7 +1,9 @@
 using System.Reflection;
 using System.Runtime.Loader;
+using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using Google.Protobuf.Reflection;
 using Microsoft.Extensions.Logging;
+using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace DevTools.Catalog;
 
@@ -81,10 +83,11 @@ public sealed class GrpcServiceCatalog(ILogger<GrpcServiceCatalog> logger) : IGr
 
                     try
                     {
-                        services.Add(BuildServiceInfo(descriptor));
+                        var comments = CommentsFor(descriptor.File, assembly, logger);
+                        services.Add(BuildServiceInfo(descriptor, comments, assembly));
                         foreach (var method in descriptor.Methods)
                             methods[$"{descriptor.FullName}/{method.Name}"] =
-                                new GrpcMethodCatalogEntry(BuildMethodInfo(method), method);
+                                new GrpcMethodCatalogEntry(BuildMethodInfo(method, comments), method);
                     }
                     catch (Exception ex)
                     {
@@ -112,46 +115,90 @@ public sealed class GrpcServiceCatalog(ILogger<GrpcServiceCatalog> logger) : IGr
         }
     }
 
-    private static GrpcServiceInfo BuildServiceInfo(ServiceDescriptor descriptor) =>
+    private static GrpcServiceInfo BuildServiceInfo(ServiceDescriptor descriptor,
+        IReadOnlyDictionary<string, string> comments, Assembly assembly) =>
         new()
         {
             Name = descriptor.Name,
             FullName = descriptor.FullName,
+            Description = comments.TryGetValue(descriptor.Name, out var summary) ? summary : null,
             Package = descriptor.File.Package,
             FileName = descriptor.File.Name,
+            IsPlugin = IsPluginAssembly(assembly),
             Methods = descriptor.Methods
-                .Select(BuildMethodInfo)
+                .Select(method => BuildMethodInfo(method, comments))
                 .ToArray()
         };
 
-    private static GrpcMethodInfo BuildMethodInfo(MethodDescriptor method) =>
+    private static bool IsPluginAssembly(Assembly assembly)
+    {
+        var assemblyName = assembly.GetName().Name ?? string.Empty;
+        if (string.Equals(assemblyName, "Host", StringComparison.OrdinalIgnoreCase) ||
+            assembly == Assembly.GetEntryAssembly())
+        {
+            return false;
+        }
+
+        if (assembly.GetCustomAttribute<PluginMetadataAttribute>() is not null)
+        {
+            return true;
+        }
+
+        var types = SafeGetTypes(assembly);
+        if (types.Any(t => typeof(IAuthKitPlugin).IsAssignableFrom(t) && !t.IsInterface && !t.IsAbstract))
+        {
+            return true;
+        }
+
+        if (assemblyName.StartsWith("System.", StringComparison.OrdinalIgnoreCase) ||
+            assemblyName.StartsWith("Microsoft.", StringComparison.OrdinalIgnoreCase) ||
+            assemblyName.StartsWith("Google.", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(assemblyName, "Core", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private static GrpcMethodInfo BuildMethodInfo(MethodDescriptor method,
+        IReadOnlyDictionary<string, string> comments) =>
         new()
         {
             Name = method.Name,
             FullName = $"{method.Service.FullName}/{method.Name}",
+            Description = comments.TryGetValue($"{method.Service.Name}.{method.Name}", out var summary)
+                ? summary
+                : null,
             IsClientStreaming = method.IsClientStreaming,
             IsServerStreaming = method.IsServerStreaming,
-            Request = BuildMessageSchema(method.InputType, depth: 0),
-            Response = BuildMessageSchema(method.OutputType, depth: 0)
+            Request = BuildMessageSchema(method.InputType, depth: 0, comments),
+            Response = BuildMessageSchema(method.OutputType, depth: 0, comments)
         };
 
-    private static GrpcMessageSchema BuildMessageSchema(MessageDescriptor message, int depth) =>
+    private static GrpcMessageSchema BuildMessageSchema(MessageDescriptor message, int depth,
+        IReadOnlyDictionary<string, string> comments) =>
         new()
         {
             Name = message.Name,
             FullName = message.FullName,
+            Description = comments.TryGetValue(message.Name, out var summary) ? summary : null,
             Fields = depth >= MaxMessageDepth
                 ? []
                 : message.Fields.InFieldNumberOrder()
-                    .Select(field => BuildFieldSchema(field, depth))
+                    .Select(field => BuildFieldSchema(field, depth, comments))
                     .ToArray()
         };
 
-    private static GrpcFieldSchema BuildFieldSchema(FieldDescriptor field, int depth)
+    private static GrpcFieldSchema BuildFieldSchema(FieldDescriptor field, int depth,
+        IReadOnlyDictionary<string, string> comments)
     {
         var schema = new GrpcFieldSchema
         {
             Name = field.Name,
+            Description = comments.TryGetValue($"{field.ContainingType.Name}.{field.Name}", out var summary)
+                ? summary
+                : null,
             FieldType = field.FieldType.ToString(),
             IsRepeated = field.IsRepeated,
             IsMap = field.IsMap
@@ -164,13 +211,13 @@ public sealed class GrpcServiceCatalog(ILogger<GrpcServiceCatalog> logger) : IGr
 
             schema.MapKeyType = keyField.FieldType.ToString();
             if (valueField.FieldType == FieldType.Message)
-                schema.MapValue = BuildMessageSchema(valueField.MessageType, depth + 1);
+                schema.MapValue = BuildMessageSchema(valueField.MessageType, depth + 1, comments);
             else
                 schema.MapValueType = valueField.FieldType.ToString();
         }
 
         if (field is { FieldType: FieldType.Message, IsMap: false })
-            schema.Message = BuildMessageSchema(field.MessageType, depth + 1);
+            schema.Message = BuildMessageSchema(field.MessageType, depth + 1, comments);
 
         if (field.FieldType == FieldType.Enum)
         {
@@ -179,5 +226,27 @@ public sealed class GrpcServiceCatalog(ILogger<GrpcServiceCatalog> logger) : IGr
         }
 
         return schema;
+    }
+
+    private static IReadOnlyDictionary<string, string> CommentsFor(FileDescriptor file,
+        Assembly assembly, ILogger<GrpcServiceCatalog> logger)
+    {
+        var roots = assembly.Location is { Length: > 0 } location
+            ? new[] { Path.GetDirectoryName(location) }
+            : null;
+
+        var path = ProtoDocComments.TryResolvePath(file.Name, roots);
+        if (path is null)
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+
+        try
+        {
+            return ProtoDocComments.Parse(path);
+        }
+        catch (Exception ex)
+        {
+            logger.LogDebug(ex, "Failed to parse proto comments from {Path}.", path);
+            return new Dictionary<string, string>(StringComparer.Ordinal);
+        }
     }
 }

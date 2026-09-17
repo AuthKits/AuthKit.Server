@@ -70,12 +70,14 @@ public sealed class GrpcDynamicInvoker(
             var response = await InvokeUnaryAsync(method, request.Headers, request.RequestJson, cancellationToken);
             stopwatch.Stop();
 
+            var responseBytes = response.ToByteArray();
             return new GrpcInvocationResult
             {
                 Success = true,
                 StatusName = nameof(StatusCode.OK),
                 StatusCode = (int)StatusCode.OK,
                 ResponseJson = JsonFormatter.Default.Format(response),
+                ResponseBase64 = Convert.ToBase64String(responseBytes),
                 ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
             };
         }
@@ -103,6 +105,32 @@ public sealed class GrpcDynamicInvoker(
                 StatusName = nameof(StatusCode.InvalidArgument),
                 StatusCode = (int)StatusCode.InvalidArgument,
                 Detail = $"Request JSON is invalid: {ex.Message}",
+                ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
+            };
+        }
+        catch (InvalidProtocolBufferException ex)
+        {
+            stopwatch.Stop();
+            return new GrpcInvocationResult
+            {
+                Success = false,
+                StatusName = nameof(StatusCode.InvalidArgument),
+                StatusCode = (int)StatusCode.InvalidArgument,
+                Detail = $"Request JSON is invalid: {ex.Message}",
+                ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
+            };
+        }
+        catch (Exception ex)
+        {
+            stopwatch.Stop();
+            logger.LogWarning(ex, "Unexpected failure invoking {Method}.", method.FullName);
+
+            return new GrpcInvocationResult
+            {
+                Success = false,
+                StatusName = nameof(StatusCode.Internal),
+                StatusCode = (int)StatusCode.Internal,
+                Detail = ex.Message,
                 ElapsedMs = Math.Round(stopwatch.Elapsed.TotalMilliseconds, 2)
             };
         }
@@ -158,13 +186,23 @@ public sealed class GrpcDynamicInvoker(
     /// </remarks>
     private static GrpcChannel CreateChannel(IOptions<DevToolsOptions> options, ILogger<GrpcDynamicInvoker> logger)
     {
+        var target = options.Value.ResolveGrpcTarget();
+
+        // The host falls back to plain HTTP/2 (h2c) when no dev certificate is
+        // present. gRPC over an unencrypted connection requires this switch.
+        if (target.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            AppContext.SetSwitch(
+                "System.Net.Http.SocketsHttpHandler.Http2UnencryptedSupport",
+                true);
+        }
+
         var handler = new HttpClientHandler
         {
             ServerCertificateCustomValidationCallback =
                 HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
         };
 
-        var target = options.Value.ResolveGrpcTarget();
         logger.LogInformation("gRPC UI channel configured for target {Target}.", target);
 
         return GrpcChannel.ForAddress(target, new GrpcChannelOptions { HttpHandler = handler });

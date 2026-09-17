@@ -5,8 +5,9 @@ namespace DevTools.Runtime;
 /// </summary>
 /// <remarks>
 /// A successful invocation carries the serialized response in
-/// <see cref="ResponseJson"/>. Failures carry the gRPC status identifier and
-/// code, a human-readable detail, and any response trailers.
+/// <see cref="ResponseJson"/> and raw protobuf bytes in <see cref="ResponseBase64"/>.
+/// Failures carry the gRPC status identifier and code, a human-readable detail,
+/// and any response trailers.
 /// </remarks>
 public sealed class GrpcInvocationResult
 {
@@ -35,6 +36,11 @@ public sealed class GrpcInvocationResult
     /// succeeded.
     /// </summary>
     public string? ResponseJson { get; init; }
+
+    /// <summary>
+    /// Gets the raw binary protobuf response encoded as base64 string.
+    /// </summary>
+    public string? ResponseBase64 { get; init; }
 
     /// <summary>
     /// Gets the invocation duration in milliseconds.
