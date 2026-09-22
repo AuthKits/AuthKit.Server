@@ -1,4 +1,4 @@
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./024-plugin-lifecycle-and-hosted-services.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./024-plugin-lifecycle-and-hosted-services.md) | [Next](./026-plugin-authentication-and-authorization-hooks.md)
 
 # [ADR-025] Keep Plugin Options, OpenAPI, And Marten Integrations Explicit
 
@@ -45,4 +45,4 @@ Plugin configuration is isolated and strongly typed. OpenAPI and Marten contribu
 - [ADR-023](./023-plugin-application-pipeline-hooks.md) - application integration hooks
 - [Issue #11](https://github.com/AuthKits/AuthKit.Server/issues/11) - options, OpenAPI, and Marten integration requirements
 
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./024-plugin-lifecycle-and-hosted-services.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./024-plugin-lifecycle-and-hosted-services.md) | [Next](./026-plugin-authentication-and-authorization-hooks.md)

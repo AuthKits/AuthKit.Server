@@ -1,4 +1,4 @@
-# ADR-017: Plugin Contract and Dynamic Loading Architecture
+# ADR-028: Plugin Contract and Dynamic Loading Architecture
 
 ## Context
 
@@ -110,10 +110,10 @@ The `PluginLoader.LoadPlugins()` method signature changed from 2 to 3 required p
 Plugins
 
 ### Previous
-ADR-016: Using Marten and Wolverine as the host infrastructure
+ADR-027: Compile The DevTools UI From Modular TypeScript Into A Single Embedded Resource
 
 ### Next
-N/A (latest in collection)
+ADR-029: Expose Structured And Cancellable Plugin Health Results
 
 ## Consequences
 
