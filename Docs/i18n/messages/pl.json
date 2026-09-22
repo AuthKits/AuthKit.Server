@@ -1,0 +1,83 @@
+{
+  "meta": {
+    "label": "Polski",
+    "short": "PL",
+    "navThird": "adr"
+  },
+  "theme": {
+    "light": "Jasny",
+    "dark": "Ciemny"
+  },
+  "themeToggle": {
+    "switchToLight": "Przełącz na tryb jasny",
+    "switchToDark": "Przełącz na tryb ciemny"
+  },
+  "locale": {
+    "language": "Język",
+    "unavailable": "Ta strona nie jest jeszcze dostępna w tym języku."
+  },
+  "navbar": {
+    "home": "Strona główna",
+    "schemas": "Schematy i diagramy",
+    "github": "GitHub"
+  },
+  "docs": {
+    "introduction": "Wprowadzenie",
+    "quickStart": "Szybki start",
+    "configuration": "Konfiguracja",
+    "restApi": "REST API",
+    "schemas": "Schematy",
+    "adrOverview": "Przegląd ADR",
+    "grpc": "gRPC",
+    "plugins": "Wtyczki",
+    "devTokens": "DevTokens",
+    "devTools": "DevTools",
+    "customPlugins": "Własne wtyczki",
+    "guide": "Przewodnik",
+    "reference": "Dokumentacja",
+    "infrastructure": "Infrastruktura",
+    "keycloak": "Keycloak",
+    "marten": "Marten + PostgreSQL",
+    "wolverine": "Wolverine",
+    "docker": "Docker + Kestrel"
+  },
+  "landing": {
+    "metaTitle": "AuthKit Uwierzytelnianie deweloperów i dostęp do SDK",
+    "metaDescription": "Usługa oparta na wtyczkach do uwierzytelniania deweloperów, wydawania tokenów SDK i weryfikacji dostępu.",
+    "navDocs": "Docs",
+    "navApi": "API",
+    "navAdrs": "ADRs",
+    "navConfig": "Konfig",
+    "navGithub": "GitHub",
+    "heroTitleA": "Uwierzytelnianie",
+    "heroTitleB": "w epoce SDK.",
+    "heroSub": "AuthKit weryfikuje deweloperów przez Keycloak, wydaje tokeny o wąskich zakresach i pozwala każdemu API je weryfikować. Oparty na wtyczkach, audytowalny, nudny tam, gdzie trzeba.",
+    "heroPrimary": "Zacznij",
+    "heroSecondary": "Szybki start →",
+    "flowLabel": "Przepływ tokenu",
+    "detailsMore": "szczegóły +",
+    "dialogClose": "Zamknij",
+    "hex1Num": "01 / KIM JESTEŚ",
+    "hex1Title": "Uwierzytelnij",
+    "hex1Sub": "Authorization: Bearer <keycloak-jwt>",
+    "hex1Body": "Wszystko zaczyna się w Keycloak. Deweloper loguje się tam AuthKit nigdy nie widzi ani nie trzyma hasła. Każde wywołanie API niesie token dostępowy Keycloak w nagłówku Authorization, a AuthKit weryfikuje jego podpis, ważność i role. Do zweryfikowanej tożsamości wiązane są wszystkie późniejsze tokeny.",
+    "hex1LinkLabel": "Jak działa AuthKit →",
+    "hex2Num": "02 / WEŹ TOKEN",
+    "hex2Title": "POST /sdk/developer-tokens",
+    "hex2Sub": "→ jwt + rk_live_… + scopes",
+    "hex2Body": "Z ważnym tokenem Keycloak prosisz o token deweloperski: nadajesz nazwę, wybierasz zakresy jak write:packages i czas życia w dniach. AuthKit podpisuje JWT, generuje do niego klucz rk_live_… i zwraca oba. Zakresy i ważność siedzą w tokenie później nic nie trzeba dopytywać. Limit to MaxDeveloperTokens na dewelopera.",
+    "hex2LinkLabel": "Endpointy tokenów →",
+    "hex3Num": "03 / UDOWODNIJ",
+    "hex3Title": "POST /sdk/tokens/verify",
+    "hex3Sub": "X-Developer-Token → valid · scopes",
+    "hex3Body": "SDK dokleja deweloperski JWT jako X-Developer-Token obok tokenu Keycloak. Docelowe API prosi AuthKit o weryfikację podpis, ważność, unieważnienia i zakresy albo sprawdza podpis samodzielnie offline przez endpoint JWKS. Jedno wywołanie odpowiada: czy token jest ważny i czy wolno mu tknąć ten zakres?",
+    "hex3LinkLabel": "API weryfikacji →",
+    "feat1T": "Tożsamość z Keycloak",
+    "feat1D": "Zero przechowywanych haseł. Deweloperzy logują się przez Keycloak; każdy wydany token jest powiązany ze zweryfikowaną tożsamością i jawnymi zakresami.",
+    "feat2T": "Tokeny o wąskich zakresach",
+    "feat2D": "Krótko żyjące, podpisane JWT z wbudowanymi zakresami i czasem życia. Weryfikacja online albo offline na brzegu przez JWKS bez zaglądania do bazy.",
+    "feat3T": "Jeden host, dwa transporty",
+    "feat3D": "Ta sama powierzchnia przez REST i gRPC. Wolverine dystrybuuje, Marten na PostgreSQL trzyma ślad audytowy, wtyczki rozszerzają wszystko.",
+    "mit": "AuthKit MIT"
+  }
+}
