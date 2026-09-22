@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "types": ["node", "vite/client"],
+    "extends": "./.svelte-kit/tsconfig.json"
+  },
+  "include": [
+    "src/**/*.{js,ts}",
+    "scripts/**/*.ts",
+    "vite.config.ts",
+    "svelte.config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    ".svelte-kit"
+  ]
+}
