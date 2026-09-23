@@ -25,19 +25,22 @@ export function buildRegistryFilter(table: HTMLTableElement, labels: FilterLabel
     ),
   ]
 
-  const bar = el('div', 'adr-filter')
-  const input = el('input', 'adr-filter__search')
+  const bar = el('div', 'adr-filter mt-4 mb-0.5 flex flex-wrap items-center gap-2.5 rounded-[10px] border border-edge2 bg-panel px-3.5 py-2.5')
+  const input = el('input', 'adr-filter__search min-w-0 flex-[1_1_14rem] rounded-lg border border-edge2 bg-raise px-3 py-2 font-inherit text-[0.85rem] text-paper outline-none placeholder:text-faint focus:border-[#52525b]')
   input.type = 'search'
   input.placeholder = labels.search
   input.setAttribute('aria-label', labels.search)
 
-  const pills = el('div', 'adr-filter__pills')
+  const pills = el('div', 'adr-filter__pills flex flex-wrap gap-1.5')
   pills.setAttribute('role', 'group')
   let area = ''
   const buttons: HTMLButtonElement[] = []
-  for (const name of ['', ...areas])
-  {
-    const b = el('button', 'adr-filter__pill', name || labels.all)
+  for (const name of ['', ...areas]) {
+    const b = el(
+      'button',
+      'adr-filter__pill cursor-pointer rounded-full border border-edge2 bg-transparent px-3 py-1.5 font-mono text-[0.7rem] tracking-[0.06em] text-mist uppercase transition-colors hover:border-[#52525b] hover:text-paper aria-pressed:border-[#52525b] aria-pressed:bg-well aria-pressed:text-[#fafafa]',
+      name || labels.all,
+    )
     b.type = 'button'
     b.setAttribute('aria-pressed', name === '' ? 'true' : 'false')
     if (name === '') b.classList.add('is-active')
@@ -54,9 +57,9 @@ export function buildRegistryFilter(table: HTMLTableElement, labels: FilterLabel
     pills.appendChild(b)
   }
 
-  const count = el('span', 'adr-filter__count')
+  const count = el('span', 'adr-filter__count ml-auto font-mono text-[0.7rem] tracking-[0.08em] whitespace-nowrap text-faint')
   count.setAttribute('aria-live', 'polite')
-  const empty = el('p', 'adr-filter__empty', labels.empty)
+  const empty = el('p', 'adr-filter__empty mt-2 rounded-[10px] border border-dashed border-edge2 p-3.5 text-center text-[0.85rem] text-fog', labels.empty)
   empty.hidden = true
 
   function apply(): void

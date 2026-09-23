@@ -13,6 +13,8 @@ export interface HeroNamespace {
   num: string
   label: string
   nav: string
+  /** Optional classes for section links inside the nav (default: none). */
+  link?: string
 }
 
 export interface HeroStat {
@@ -61,7 +63,7 @@ export function appendSectionNav(
   const nav = el('nav', ns.nav)
   if (ariaLabel) nav.setAttribute('aria-label', ariaLabel)
   for (const { href, text } of links) {
-    const a = el('a', '', text)
+    const a = el('a', ns.link ?? '', text)
     a.href = href
     nav.appendChild(a)
   }
