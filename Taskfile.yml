@@ -71,6 +71,26 @@ tasks:
     cmds:
       - dotnet format {{.SOLUTION}}
 
+  docs:install:
+    desc: Install SveltePress documentation dependencies
+    dir: Docs
+    cmds:
+      - npm install
+
+  docs:build:
+    desc: Build the SveltePress documentation site
+    dir: Docs
+    deps: [docs:install]
+    cmds:
+      - npm run build
+
+  docs:dev:
+    desc: Start the SveltePress documentation site locally
+    dir: Docs
+    deps: [docs:install]
+    cmds:
+      - npm run dev
+
   security:audit:
     desc: List vulnerable NuGet packages (incl. transitive)
     cmds:

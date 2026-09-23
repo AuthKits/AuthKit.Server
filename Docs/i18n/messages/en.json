@@ -79,5 +79,22 @@
     "feat3T": "One host, two transports",
     "feat3D": "The same surface over REST and gRPC. Wolverine dispatches, Marten on PostgreSQL stores the audit trail, plugins extend everything.",
     "mit": "AuthKit MIT"
+  },
+  "chrome": {
+    "decisions": "decisions",
+    "areas": "areas",
+    "latestEntry": "latest entry",
+    "registrySections": "Registry sections",
+    "sections": "sections",
+    "read": "read",
+    "search": "Search by ID or title…",
+    "all": "All",
+    "shown": "of",
+    "empty": "No results for the given filters."
+  },
+  "sections": {
+    "decision": "decision",
+    "rejected": "rejected",
+    "consequences": "consequences"
   }
 }

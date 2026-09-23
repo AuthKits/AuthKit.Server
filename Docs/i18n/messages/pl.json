@@ -79,5 +79,22 @@
     "feat3T": "Jeden host, dwa transporty",
     "feat3D": "Ta sama powierzchnia przez REST i gRPC. Wolverine dystrybuuje, Marten na PostgreSQL trzyma ślad audytowy, wtyczki rozszerzają wszystko.",
     "mit": "AuthKit MIT"
+  },
+  "chrome": {
+    "decisions": "decyzji",
+    "areas": "obszary",
+    "latestEntry": "ostatni wpis",
+    "registrySections": "Sekcje rejestru",
+    "sections": "sekcji",
+    "read": "czytania",
+    "search": "Szukaj po ID lub tytule…",
+    "all": "Wszystkie",
+    "shown": "z",
+    "empty": "Brak wyników dla podanych filtrów."
+  },
+  "sections": {
+    "decision": "decyzja",
+    "rejected": "odrzucone",
+    "consequences": "konsekwencje"
   }
 }
