@@ -11,10 +11,10 @@ using Host.Plugins.Lifecycle;
 using Host.Cli;
 using Host.Security;
 using Host.Security.Registrations;
-using AuthKit.Plugins.Abstractions;
 using System.Reflection;
 using AuthKit.Plugins.Abstractions.Models;
 using Host.Plugins.Health;
+using AuthKit.Plugins.Abstractions.Pipeline;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +30,7 @@ var hostVersion = SemanticVersion.Parse(Assembly.GetEntryAssembly()!
 var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger, hostVersion);
 
 var restfulLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("RestfulConfiguration");
+var grpcLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("GrpcConfiguration");
 
 // === Core Config ===
 builder.Services.AddSingleton(plugins);
@@ -40,7 +41,7 @@ builder.Services.AddSingleton<Host.Monitoring.HealthReportService>();
 builder.Services.AddAuthKitCore();
 
 builder.Services.ConfigureApp(builder.Configuration, plugins)
-    .AddGrpcServices()
+    .AddGrpcServices(plugins, grpcLogger)
     .AddRestfulServices(plugins, builder.Configuration, restfulLogger)
     .AddApiKeyCredentialExtraction()
     .AddKeycloakServices(plugins);

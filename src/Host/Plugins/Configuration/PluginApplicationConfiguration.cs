@@ -1,7 +1,7 @@
 using System.Reflection;
-using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using Host.Plugins.Loading;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
@@ -12,15 +12,15 @@ namespace Host.Plugins.Configuration;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Plugins are invoked in a stable order regardless of the order they were
+/// Plugins are invoked in stable order regardless of the order they were
 /// discovered: first by <see cref="PluginPipelinePosition"/> and then by
 /// plugin identifier using an ordinal comparison.
 /// </para>
 /// <para>
-/// Plugins that do not implement a given hook are skipped. The newer
+/// Plugins that do not implement given hook are skipped. The newer
 /// <c>ConfigureApplication</c> and <c>ConfigurePipeline</c> hooks take
 /// precedence over the legacy <c>MiddlewareType</c> entry point, which is
-/// applied only as a compatibility fallback.
+/// applied only as compatibility fallback.
 /// </para>
 /// </remarks>
 internal static class PluginApplicationConfiguration
@@ -57,12 +57,12 @@ internal static class PluginApplicationConfiguration
     /// <param name="plugins">The plugins loaded during application startup.</param>
     /// <param name="position">The pipeline position to run hooks for.</param>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Thrown when <paramref name="position"/> is not a defined
+    /// Thrown when <paramref name="position"/> is not defined
     /// <see cref="PluginPipelinePosition"/> value.
     /// </exception>
     /// <exception cref="InvalidOperationException">
-    /// Thrown when a plugin that implements the pipeline hook declares a
-    /// <c>PipelinePosition</c> that is not a defined enum value.
+    /// Thrown when plugin that implements the pipeline hook declares a
+    /// <c>PipelinePosition</c> that is not defined enum value.
     /// </exception>
     public static void ConfigurePipeline(
         IApplicationBuilder application,
@@ -138,7 +138,7 @@ internal static class PluginApplicationConfiguration
     /// <summary>
     /// Inserts declarative <see cref="PluginMiddleware"/> entries for one
     /// <see cref="PipelinePosition"/> in deterministic order
-    /// (Order → stable plugin Id → declaration index).
+    /// (Order -> stable plugin Id -> declaration index).
     /// Disabled entries are skipped without side effects.
     /// <see cref="IAuthKitMiddleware"/> and <see cref="AuthKitMiddlewareBase"/>
     /// implementations are resolved from the request
@@ -156,7 +156,8 @@ internal static class PluginApplicationConfiguration
         var ordered = plugins
             .SelectMany(lp => (lp.Plugin.Middlewares ?? [])
                 .Select((mw, index) => (Plugin: lp.Plugin, Entry: mw, Index: index)))
-            .Where(x => x.Entry.Position == position && x.Entry.IsMiddlewareEnabled)
+            .Where(x => x.Entry.Position == position && x.Entry.IsMiddlewareEnabled
+                && x.Entry.Transport == AuthKitTransport.Http)
             .OrderBy(x => x.Entry.Order)
             .ThenBy(x => x.Plugin.Id, StringComparer.Ordinal)
             .ThenBy(x => x.Index)
@@ -246,14 +247,14 @@ internal static class PluginApplicationConfiguration
     }
 
     /// <summary>
-    /// Determines whether a plugin provides a concrete implementation of the given
+    /// Determines whether plugin provides concrete implementation of the given
     /// hook rather than inheriting the interface's default implementation.
     /// </summary>
     /// <param name="plugin">The plugin to inspect.</param>
     /// <param name="methodName">The name of the interface method to look up.</param>
     /// <param name="parameterTypes">The parameter types that identify the overload.</param>
     /// <returns>
-    /// <c>true</c> when the plugin overrides the hook; otherwise, <c>false</c>.
+    /// <c>true</c> when the plugin overrides the hook otherwise, <c>false</c>.
     /// </returns>
     private static bool HasImplementation(IAuthKitPlugin plugin, string methodName, params Type[] parameterTypes)
     {
