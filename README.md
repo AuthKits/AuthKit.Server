@@ -132,8 +132,9 @@ The host listens on the address configured in `Server:Host` (default `http://0.0
 | Topic | Link |
 | --- | --- |
 | Documentation index | [Docs](Docs/README.md) |
+| SveltePress site | Run `task docs:dev` locally |
 | Schemas & Diagrams | [Schemas](Docs/Schemas.md) |
-| Architecture Decision Records | [ADRs](Docs/ADR/README.md) |
+| Architecture Decision Records | [ADRs](Docs/content/en/adr/README.md) |
 
 ## Contributing
 
