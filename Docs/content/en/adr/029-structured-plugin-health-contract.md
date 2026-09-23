@@ -1,10 +1,10 @@
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./024-plugin-lifecycle-and-hosted-services.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./028-plugin-contract-and-dynamic-loading-architecture.md) | [Next]()
 
-# [ADR-025] Expose Structured And Cancellable Plugin Health Results
+# [ADR-029] Expose Structured And Cancellable Plugin Health Results
 
 *2026-09* | Status: accepted
 
-**Tag:** #adr_025
+**Tag:** #adr_029
 
 **Date:** 2026-09-13
 
@@ -71,4 +71,4 @@ contract validator invokes the new method and rejects an empty result collection
 - [Issue #14](https://github.com/AuthKits/AuthKit.Server/issues/14) - structured plugin health result
 - [Issue #15](https://github.com/AuthKits/AuthKit.Server/issues/15) - multiple results and cancellation
 
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./024-plugin-lifecycle-and-hosted-services.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./028-plugin-contract-and-dynamic-loading-architecture.md) | [Next]()

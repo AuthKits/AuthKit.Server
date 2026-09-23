@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/@sveltepress/cli/schema/versions.schema.json",
+  "basePath": "/pl/v",
+  "current": {
+    "id": "0.1",
+    "label": "0.1"
+  },
+  "versions": [],
+  "content": {
+    "include": [
+      "**"
+    ],
+    "exclude": [],
+    "shared": ["$lib/**", "static/**"]
+  },
+  "artifacts": {
+    "mode": "incremental",
+    "siteId": "authkit-docs",
+    "store": ".sveltepress/version-artifacts",
+    "sources": "version-deltas-pl"
+  }
+}

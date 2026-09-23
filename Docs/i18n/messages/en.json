@@ -1,0 +1,100 @@
+{
+  "meta": {
+    "label": "English",
+    "short": "EN",
+    "navThird": "adr"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "themeToggle": {
+    "switchToLight": "Switch to light mode",
+    "switchToDark": "Switch to dark mode"
+  },
+  "locale": {
+    "language": "Language",
+    "unavailable": "This page is not available in this language yet."
+  },
+  "navbar": {
+    "home": "Home",
+    "schemas": "Schemas & Diagrams",
+    "github": "GitHub"
+  },
+  "docs": {
+    "introduction": "Introduction",
+    "quickStart": "Quick Start",
+    "configuration": "Configuration",
+    "restApi": "REST API",
+    "schemas": "Schemas",
+    "adrOverview": "ADR Overview",
+    "grpc": "gRPC",
+    "plugins": "Plugins",
+    "devTokens": "DevTokens",
+    "devTools": "DevTools",
+    "customPlugins": "Custom plugins",
+    "guide": "Guide",
+    "reference": "Reference",
+    "infrastructure": "Infrastructure",
+    "keycloak": "Keycloak",
+    "marten": "Marten + PostgreSQL",
+    "wolverine": "Wolverine",
+    "docker": "Docker + Kestrel"
+  },
+  "landing": {
+    "metaTitle": "AuthKit Developer Authentication & SDK Access",
+    "metaDescription": "Plugin based service for developer authentication, SDK token issuance and access verification.",
+    "navDocs": "Docs",
+    "navApi": "API",
+    "navAdrs": "ADRs",
+    "navConfig": "Config",
+    "navGithub": "GitHub",
+    "heroTitleA": "Authentication for",
+    "heroTitleB": "the age of SDKs.",
+    "heroSub": "AuthKit verifies developers through Keycloak, issues scoped tokens, and lets any API verify them. Plugin-based, auditable, boring in all the right places.",
+    "heroPrimary": "Get started",
+    "heroSecondary": "Quick start →",
+    "flowLabel": "Token flow",
+    "detailsMore": "details +",
+    "dialogClose": "Close",
+    "hex1Num": "01 / WHO YOU ARE",
+    "hex1Title": "Authenticate",
+    "hex1Sub": "Authorization: Bearer <keycloak-jwt>",
+    "hex1Body": "Everything starts with Keycloak. The developer signs in there AuthKit never sees or stores a password. Each API call carries the Keycloak access token in the Authorization header, and AuthKit validates its signature, expiry and roles before doing anything else. The verified identity is what all later tokens get bound to.",
+    "hex1LinkLabel": "How AuthKit works →",
+    "hex2Num": "02 / GET A TOKEN",
+    "hex2Title": "POST /sdk/developer-tokens",
+    "hex2Sub": "→ jwt + rk_live_… + scopes",
+    "hex2Body": "With a valid Keycloak token you request a developer token: name it, pick scopes like write:packages and a lifetime in days. AuthKit signs a JWT, generates rk_live_… key for it and returns both. Scopes and expiry live inside the token no lookup needed later. Cap is MaxDeveloperTokens per developer.",
+    "hex2LinkLabel": "Token endpoints →",
+    "hex3Num": "03 / PROVE IT",
+    "hex3Title": "POST /sdk/tokens/verify",
+    "hex3Sub": "X-Developer-Token → valid · scopes",
+    "hex3Body": "The SDK attaches the developer JWT as X-Developer-Token next to the Keycloak bearer token. The target API asks AuthKit to verify it signature, expiry, revocation and scopes or checks the signature itself offline using the JWKS endpoint. One call answers: is this token valid, and may it touch this scope?",
+    "hex3LinkLabel": "Verification API →",
+    "feat1T": "Keycloak-native identity",
+    "feat1D": "No passwords stored, ever. Developers sign in via Keycloak; every token issued is bound to a verified identity with explicit scopes.",
+    "feat2T": "Scoped developer tokens",
+    "feat2D": "Short lived signed JWTs with embedded scopes and lifetime. Verify online, or offline at the edge with JWKS no database round trip.",
+    "feat3T": "One host, two transports",
+    "feat3D": "The same surface over REST and gRPC. Wolverine dispatches, Marten on PostgreSQL stores the audit trail, plugins extend everything.",
+    "mit": "AuthKit MIT"
+  },
+  "chrome": {
+    "decisions": "decisions",
+    "areas": "areas",
+    "latestEntry": "latest entry",
+    "registrySections": "Registry sections",
+    "sections": "sections",
+    "read": "read",
+    "search": "Search by ID or title…",
+    "all": "All",
+    "shown": "of",
+    "empty": "No results for the given filters."
+  },
+  "sections": {
+    "decision": "decision",
+    "rejected": "rejected",
+    "consequences": "consequences"
+  }
+}

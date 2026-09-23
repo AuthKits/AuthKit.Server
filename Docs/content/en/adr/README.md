@@ -66,7 +66,6 @@ The table below shows the architecture areas and their current scope.
 | [ADR-014](./014-error-responses-via-middleware.md) | Render HTTP Errors As RFC 7807 Problem Details Via Middleware | Host | accepted | 2026-08-26 |
 | [ADR-015](./015-keycloak-external-jwt-authority.md) | Use Keycloak As The External JWT Authority | Host | accepted | 2026-08-26 |
 | [ADR-016](./016-marten-and-wolverine-infrastructure.md) | Use Marten And Wolverine As Host Infrastructure | Host | accepted | 2026-08-26 |
-| [ADR-017](./017-Plugin-Contract-and-Dynamic-Loading-Architecture.md) | Define The Plugin Contract And Dynamic Loading Architecture | Plugins | accepted | 2026-09-11 |
 | [ADR-017](./017-api-key-credential-extraction-strategies.md) | Define API Key Credential Extraction Strategies | Host | accepted | 2026-09-11 |
 | [ADR-018](./018-security-scheme-contract-explicit-handling.md) | Handle Security Scheme Contract Values Explicitly | Plugins | accepted | 2026-09-11 |
 | [ADR-019](./019-plugin-metadata-attribute.md) | Declare Plugin Identity Through The PluginMetadata Attribute | Plugins | accepted | 2026-09-11 |
@@ -78,6 +77,8 @@ The table below shows the architecture areas and their current scope.
 | [ADR-025](./025-plugin-options-openapi-and-marten-integrations.md) | Keep Plugin Options, OpenAPI, And Marten Integrations Explicit | Plugins | accepted | 2026-09-12 |
 | [ADR-026](./026-plugin-authentication-and-authorization-hooks.md) | Configure Plugin Authentication And Authorization Through Host Security Infrastructure | Plugins | accepted | 2026-09-12 |
 | [ADR-027](./027-devtools-ui-typescript.md) | Compile The DevTools UI From Modular TypeScript Into A Single Embedded Resource | Plugins | accepted | 2026-09-16 |
+| [ADR-028](./028-plugin-contract-and-dynamic-loading-architecture.md) | Define The Plugin Contract And Dynamic Loading Architecture | Plugins | accepted | 2026-09-11 |
+| [ADR-029](./029-structured-plugin-health-contract.md) | Expose Structured And Cancellable Plugin Health Results | Plugins | accepted | 2026-09-13 |
 
 ## Relationships Between Areas
 
