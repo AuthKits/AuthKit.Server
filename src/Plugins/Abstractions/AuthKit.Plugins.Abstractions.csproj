@@ -21,6 +21,8 @@
     <Compile Include="Contracts/**/*.cs" />
     <Compile Include="Models/**/*.cs" />
     <Compile Include="AuthKitApiKeyLocation.cs" />
+    <Compile Include="PipelinePosition.cs" />
+    <Compile Include="PluginMiddleware.cs" />
     <Compile Include="PluginPipelinePosition.cs" />
   </ItemGroup>
 </Project>

@@ -1,6 +1,7 @@
 using System.Reflection;
 using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using Host.Plugins.Loading;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
@@ -133,6 +134,86 @@ internal static class PluginApplicationConfiguration
             application.UseMiddleware(plugin.MiddlewareType);
         }
     }
+
+    /// <summary>
+    /// Inserts declarative <see cref="PluginMiddleware"/> entries for one
+    /// <see cref="PipelinePosition"/> in deterministic order
+    /// (Order → stable plugin Id → declaration index).
+    /// Disabled entries are skipped without side effects.
+    /// <see cref="IAuthKitMiddleware"/> and <see cref="AuthKitMiddlewareBase"/>
+    /// implementations are resolved from the request
+    /// service provider (single request scope); other types use
+    /// <c>UseMiddleware</c> activation.
+    /// </summary>
+    public static void ConfigurePluginMiddlewares(
+        IApplicationBuilder application,
+        IReadOnlyList<LoadedPlugin> plugins,
+        PipelinePosition position)
+    {
+        if (!Enum.IsDefined(position))
+            throw new ArgumentOutOfRangeException(nameof(position), position, "Unsupported pipeline position.");
+
+        var ordered = plugins
+            .SelectMany(lp => (lp.Plugin.Middlewares ?? [])
+                .Select((mw, index) => (Plugin: lp.Plugin, Entry: mw, Index: index)))
+            .Where(x => x.Entry.Position == position && x.Entry.IsMiddlewareEnabled)
+            .OrderBy(x => x.Entry.Order)
+            .ThenBy(x => x.Plugin.Id, StringComparer.Ordinal)
+            .ThenBy(x => x.Index)
+            .ToList();
+
+        foreach (var (plugin, entry, _) in ordered)
+        {
+            if (entry.MiddlewareType is null)
+                throw new InvalidOperationException($"Plugin '{plugin.Id}' declares middleware with null type.");
+
+            if (!Enum.IsDefined(entry.Position))
+                throw new InvalidOperationException($"Plugin '{plugin.Id}' declares unsupported pipeline position '{entry.Position}'.");
+
+            try
+            {
+                RegisterPluginMiddleware(application, entry.MiddlewareType);
+            }
+            catch (Exception ex) when (ex is not InvalidOperationException)
+            {
+                throw new InvalidOperationException($"Plugin '{plugin.Id}' failed to register middleware '{entry.MiddlewareType?.Name ?? entry.Name}'.", ex);
+            }
+        }
+    }
+
+    private static void RegisterPluginMiddleware(IApplicationBuilder application, Type middlewareType)
+    {
+        if (typeof(IAuthKitMiddleware).IsAssignableFrom(middlewareType))
+        {
+            application.Use(async (context, next) =>
+            {
+                var middleware = ResolvePluginMiddleware<IAuthKitMiddleware>(context, middlewareType);
+                await middleware.InvokeAsync(context, next);
+            });
+
+            return;
+        }
+
+        if (typeof(AuthKitMiddlewareBase).IsAssignableFrom(middlewareType))
+        {
+            application.Use(async (context, next) =>
+            {
+                var middleware = ResolvePluginMiddleware<AuthKitMiddlewareBase>(context, middlewareType);
+                await middleware.InvokeAsync(context, next);
+            });
+
+            return;
+        }
+
+        application.UseMiddleware(middlewareType);
+    }
+
+    private static TMiddleware ResolvePluginMiddleware<TMiddleware>(HttpContext context, Type middlewareType)
+        where TMiddleware : class =>
+        context.RequestServices.GetService(middlewareType) as TMiddleware
+        ?? ActivatorUtilities.CreateInstance(context.RequestServices, middlewareType) as TMiddleware
+        ?? throw new InvalidOperationException(
+            $"Middleware type '{middlewareType.FullName}' must be assignable to '{typeof(TMiddleware).FullName}'.");
 
     /// <summary>
     /// Orders plugins by pipeline position and then by plugin identifier.
