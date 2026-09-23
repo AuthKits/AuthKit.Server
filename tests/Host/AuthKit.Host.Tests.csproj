@@ -27,6 +27,7 @@
 
   <ItemGroup>
     <ProjectReference Include="../../src/Host/Host.csproj" />
+    <ProjectReference Include="../../tools/AuthKit.PluginContractValidator/AuthKit.PluginContractValidator.csproj" />
   </ItemGroup>
 
 </Project>

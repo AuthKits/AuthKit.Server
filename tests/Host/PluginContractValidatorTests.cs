@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
+using HostPluginContractValidator = Host.Plugins.Contract.PluginContractValidator;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace AuthKit.Host.Tests;
@@ -71,7 +72,7 @@ public class PluginContractValidatorTests
     [InlineData(AuthKitSecuritySchemeType.OpenIdConnect)]
     public void ImplementedSchemeTypes_AreAccepted(AuthKitSecuritySchemeType type)
     {
-        PluginContractValidator.Validate(new FakePlugin(Describe(type)), Logger);
+        HostPluginContractValidator.Validate(new FakePlugin(Describe(type)), Logger);
     }
 
     [Theory]
@@ -82,7 +83,7 @@ public class PluginContractValidatorTests
     [InlineData(AuthKitApiKeyLocation.Body)]
     public void HostLocations_AreAccepted(AuthKitApiKeyLocation location)
     {
-        PluginContractValidator.Validate(
+        HostPluginContractValidator.Validate(
             new FakePlugin(Describe(AuthKitSecuritySchemeType.ApiKey, location)), Logger);
     }
 
@@ -94,14 +95,14 @@ public class PluginContractValidatorTests
     public void UnimplementedSchemeTypes_AreExplicitlyRejected(AuthKitSecuritySchemeType type)
     {
         Assert.Throws<InvalidPluginContractException>(() =>
-            PluginContractValidator.Validate(new FakePlugin(Describe(type)), Logger));
+            HostPluginContractValidator.Validate(new FakePlugin(Describe(type)), Logger));
     }
 
     [Fact]
     public void UnknownSchemeType_IsExplicitlyRejected()
     {
         var ex = Assert.Throws<InvalidPluginContractException>(() =>
-            PluginContractValidator.Validate(
+            HostPluginContractValidator.Validate(
                 new FakePlugin(Describe((AuthKitSecuritySchemeType)999)), Logger));
 
         Assert.Contains("unknown", ex.Message, StringComparison.OrdinalIgnoreCase);
@@ -112,7 +113,7 @@ public class PluginContractValidatorTests
     public void UnknownApiKeyLocation_IsExplicitlyRejected()
     {
         var ex = Assert.Throws<InvalidPluginContractException>(() =>
-            PluginContractValidator.Validate(
+            HostPluginContractValidator.Validate(
                 new FakePlugin(Describe(AuthKitSecuritySchemeType.ApiKey, (AuthKitApiKeyLocation)999)),
                 Logger));
 
@@ -123,10 +124,10 @@ public class PluginContractValidatorTests
     [Fact]
     public void CustomValidator_CanEnableAdditionalSchemeTypes()
     {
-        var custom = PluginContractValidator.CreateCustom(
+        var custom = HostPluginContractValidator.CreateCustom(
             supportedSchemeTypes:
             [
-                .. PluginContractValidator.SupportedSchemeTypes,
+                .. HostPluginContractValidator.SupportedSchemeTypes,
                 AuthKitSecuritySchemeType.Basic
             ]);
 
@@ -136,7 +137,7 @@ public class PluginContractValidatorTests
     [Fact]
     public void CustomValidator_CanRestrictLocations()
     {
-        var custom = PluginContractValidator.CreateCustom(
+        var custom = HostPluginContractValidator.CreateCustom(
             supportedApiKeyLocations: [AuthKitApiKeyLocation.Header]);
 
         Assert.Throws<InvalidPluginContractException>(() =>
@@ -149,11 +150,11 @@ public class PluginContractValidatorTests
     public void NoFallback_CustomAndSessionAreNotTreatedAsSupported()
     {
         Assert.Throws<InvalidPluginContractException>(() =>
-            PluginContractValidator.Validate(
+            HostPluginContractValidator.Validate(
                 new FakePlugin(Describe(AuthKitSecuritySchemeType.Session)), Logger));
 
         Assert.Throws<InvalidPluginContractException>(() =>
-            PluginContractValidator.Validate(
+            HostPluginContractValidator.Validate(
                 new FakePlugin(Describe(AuthKitSecuritySchemeType.Custom)), Logger));
     }
 
@@ -161,10 +162,10 @@ public class PluginContractValidatorTests
     public void CustomScheme_WithoutUsageDocumentation_EmitsWarning()
     {
         var logger = new RecordingLogger();
-        var custom = PluginContractValidator.CreateCustom(
+        var custom = HostPluginContractValidator.CreateCustom(
             supportedSchemeTypes:
             [
-                .. PluginContractValidator.SupportedSchemeTypes,
+                .. HostPluginContractValidator.SupportedSchemeTypes,
                 AuthKitSecuritySchemeType.Custom
             ]);
 
@@ -180,10 +181,10 @@ public class PluginContractValidatorTests
     public void CustomScheme_WithUsageDocumentation_DoesNotEmitWarning()
     {
         var logger = new RecordingLogger();
-        var custom = PluginContractValidator.CreateCustom(
+        var custom = HostPluginContractValidator.CreateCustom(
             supportedSchemeTypes:
             [
-                .. PluginContractValidator.SupportedSchemeTypes,
+                .. HostPluginContractValidator.SupportedSchemeTypes,
                 AuthKitSecuritySchemeType.Custom
             ]);
 
@@ -199,10 +200,10 @@ public class PluginContractValidatorTests
     public void CustomWarning_NeverMapsCustomToAnotherScheme()
     {
         var logger = new RecordingLogger();
-        var custom = PluginContractValidator.CreateCustom(
+        var custom = HostPluginContractValidator.CreateCustom(
             supportedSchemeTypes:
             [
-                .. PluginContractValidator.SupportedSchemeTypes,
+                .. HostPluginContractValidator.SupportedSchemeTypes,
                 AuthKitSecuritySchemeType.Custom
             ]);
 
