@@ -1,4 +1,4 @@
-using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Pipeline;
 
 namespace AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 

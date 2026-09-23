@@ -1,3 +1,4 @@
+using AuthKit.Plugins.Abstractions.Pipeline;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
