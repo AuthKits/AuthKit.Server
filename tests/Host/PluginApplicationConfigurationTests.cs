@@ -219,4 +219,122 @@ public sealed class PluginApplicationConfigurationTests
     public sealed class GrpcOnlyInterceptor : Grpc.Core.Interceptors.Interceptor
     {
     }
+
+    [Fact]
+    public void ConfigurePluginMiddlewares_InvalidPosition_Throws()
+    {
+        var app = new ApplicationBuilder(new ServiceCollection().BuildServiceProvider());
+
+        Assert.Throws<ArgumentOutOfRangeException>(() =>
+            PluginApplicationConfiguration.ConfigurePluginMiddlewares(
+                app, [], (PipelinePosition)999));
+    }
+
+    [Fact]
+    public void ConfigurePluginMiddlewares_NullMiddlewareType_Throws()
+    {
+        var app = new ApplicationBuilder(new ServiceCollection().BuildServiceProvider());
+        var plugin = new DeclarativePlugin(
+            "null-plugin", [new PluginMiddleware(null!, PipelinePosition.BeforeEndpoints)]);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            PluginApplicationConfiguration.ConfigurePluginMiddlewares(
+                app, [Load(plugin)], PipelinePosition.BeforeEndpoints));
+        Assert.Contains("null type", ex.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public void ConfigurePluginMiddlewares_UnsupportedEntryPosition_IsIgnored()
+    {
+        var app = new ApplicationBuilder(new ServiceCollection().BuildServiceProvider());
+        var plugin = new DeclarativePlugin(
+            "bad-position-plugin",
+            [new PluginMiddleware(typeof(RecordedInterfaceMiddleware), (PipelinePosition)999)]);
+
+        // Entry positions outside the enum can never match a validated request
+        // position, so they are filtered out rather than registered.
+        PluginApplicationConfiguration.ConfigurePluginMiddlewares(
+            app, [Load(plugin)], PipelinePosition.BeforeEndpoints);
+
+        Assert.NotNull(app.Build());
+    }
+
+    [Fact]
+    public void ConfigurePluginMiddlewares_RegistrationFailure_NamesPlugin()
+    {
+        var app = new ApplicationBuilder(new ServiceCollection().BuildServiceProvider());
+        var plugin = new DeclarativePlugin(
+            "broken-plugin", [new PluginMiddleware(typeof(int), PipelinePosition.BeforeEndpoints)]);
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            PluginApplicationConfiguration.ConfigurePluginMiddlewares(
+                app, [Load(plugin)], PipelinePosition.BeforeEndpoints));
+        Assert.Contains("broken-plugin", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ConfigurePluginMiddlewares_ExecutesAllHttpModelsInOrder()
+    {
+        var markers = new List<string>();
+        var services = new ServiceCollection();
+        services.AddSingleton(markers);
+        var app = new ApplicationBuilder(services.BuildServiceProvider());
+        var plugin = new DeclarativePlugin("http-plugin",
+        [
+            new PluginMiddleware(typeof(RecordedConventionMiddleware), PipelinePosition.BeforeEndpoints, Order: 2),
+            new PluginMiddleware(typeof(RecordedInterfaceMiddleware), PipelinePosition.BeforeEndpoints, Order: 0),
+            new PluginMiddleware(typeof(RecordedBaseMiddleware), PipelinePosition.BeforeEndpoints, Order: 1),
+        ]);
+
+        PluginApplicationConfiguration.ConfigurePluginMiddlewares(
+            app, [Load(plugin)], PipelinePosition.BeforeEndpoints);
+
+        var pipeline = app.Build();
+        var context = new DefaultHttpContext
+        {
+            RequestServices = app.ApplicationServices,
+        };
+        await pipeline(context);
+
+        Assert.Equal(["interface", "base", "convention"], markers);
+    }
+
+    [PluginMetadata("declarative-plugin", "1.0.0", [], [], [], description: "Declarative middleware test")]
+    private sealed class DeclarativePlugin(string id, IReadOnlyList<PluginMiddleware> middlewares) : IAuthKitPlugin
+    {
+        public string Id => id;
+
+        public IReadOnlyList<PluginMiddleware> Middlewares => middlewares;
+    }
+
+    public sealed class RecordedInterfaceMiddleware(List<string> markers)
+        : AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitMiddleware
+    {
+        public Task InvokeAsync(HttpContext context, RequestDelegate next)
+        {
+            markers.Add("interface");
+            return next(context);
+        }
+    }
+
+    public sealed class RecordedBaseMiddleware(List<string> markers)
+        : AuthKit.Plugins.Abstractions.Contracts.PluginContract.AuthKitMiddlewareBase
+    {
+        public override Task InvokeAsync(HttpContext context, RequestDelegate next)
+        {
+            markers.Add("base");
+            return next(context);
+        }
+    }
+
+    public sealed class RecordedConventionMiddleware(RequestDelegate next, List<string> markers)
+    {
+        private readonly RequestDelegate _next = next;
+
+        public Task InvokeAsync(HttpContext context)
+        {
+            markers.Add("convention");
+            return _next(context);
+        }
+    }
 }

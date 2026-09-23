@@ -168,14 +168,11 @@ internal static class PluginApplicationConfiguration
             if (entry.MiddlewareType is null)
                 throw new InvalidOperationException($"Plugin '{plugin.Id}' declares middleware with null type.");
 
-            if (!Enum.IsDefined(entry.Position))
-                throw new InvalidOperationException($"Plugin '{plugin.Id}' declares unsupported pipeline position '{entry.Position}'.");
-
             try
             {
                 RegisterPluginMiddleware(application, entry.MiddlewareType);
             }
-            catch (Exception ex) when (ex is not InvalidOperationException)
+            catch (Exception ex)
             {
                 throw new InvalidOperationException($"Plugin '{plugin.Id}' failed to register middleware '{entry.MiddlewareType?.Name ?? entry.Name}'.", ex);
             }

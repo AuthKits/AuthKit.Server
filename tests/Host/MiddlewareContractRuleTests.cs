@@ -11,6 +11,9 @@ public sealed class MiddlewareContractRuleTests
 {
     private readonly MiddlewareRule _rule = new();
 
+    [Fact]
+    public void RuleName_IsMiddleware() => Assert.Equal("Middleware", _rule.Name);
+
     [Theory]
     [InlineData(typeof(ConventionMiddleware))]
     [InlineData(typeof(BaseMiddleware))]
@@ -152,6 +155,116 @@ public sealed class MiddlewareContractRuleTests
     }
 
     public abstract class AbstractGrpcInterceptor : Grpc.Core.Interceptors.Interceptor
+    {
+    }
+
+    [Fact]
+    public async Task LegacyMiddlewareType_IsValidated()
+    {
+        var plugin = new LegacyPlugin(typeof(ConventionMiddleware));
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        Assert.Empty(await _rule.ValidateAsync(loadedPlugin));
+    }
+
+    [Fact]
+    public async Task LegacyMiddlewareType_InvalidIsRejected()
+    {
+        var plugin = new LegacyPlugin(typeof(MissingRequestDelegateMiddleware));
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        var errors = await _rule.ValidateAsync(loadedPlugin);
+
+        Assert.Contains(errors, error =>
+            error.Contains(nameof(MissingRequestDelegateMiddleware), StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task NullMiddlewareTypeEntry_IsRejected()
+    {
+        var plugin = new RawListPlugin([new PluginMiddleware(null!, PipelinePosition.BeforeAuthentication)]);
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        var errors = await _rule.ValidateAsync(loadedPlugin);
+
+        Assert.Contains(errors, error => error.Contains("null MiddlewareType", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task NonPublicMiddlewareType_IsRejected()
+    {
+        var errors = await ValidateAsync(typeof(PrivateMiddleware));
+
+        Assert.Contains(errors, error =>
+            error.Contains("must be public", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task NonClassMiddlewareType_IsRejected()
+    {
+        var errors = await ValidateAsync(typeof(StructMiddleware));
+
+        Assert.Contains(errors, error =>
+            error.Contains("concrete class", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task BaseMiddlewareWithoutPublicConstructor_IsRejected()
+    {
+        var errors = await ValidateAsync(typeof(PrivateCtorBaseMiddleware));
+
+        Assert.Contains(errors, error =>
+            error.Contains("at least one public constructor", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AbstractBaseMiddlewareWithoutOverride_IsRejected()
+    {
+        var errors = await ValidateAsync(typeof(NoOverrideBaseMiddleware));
+
+        Assert.Contains(errors, error =>
+            error.Contains("must override InvokeAsync", StringComparison.Ordinal));
+    }
+
+    private sealed class LegacyPlugin(Type middlewareType) : IAuthKitPlugin
+    {
+        public string Name => "TestPlugin";
+
+        public Type? MiddlewareType => middlewareType;
+    }
+
+    private sealed class RawListPlugin(IReadOnlyList<PluginMiddleware> middlewares) : IAuthKitPlugin
+    {
+        public string Name => "TestPlugin";
+
+        public IReadOnlyList<PluginMiddleware> Middlewares => middlewares;
+    }
+
+    private sealed class PrivateMiddleware
+    {
+        public PrivateMiddleware(RequestDelegate next)
+        {
+            _ = next;
+        }
+
+        public Task InvokeAsync(HttpContext context, RequestDelegate next) => next(context);
+    }
+
+    public struct StructMiddleware
+    {
+        public Task InvokeAsync(HttpContext context, RequestDelegate next) => next(context);
+    }
+
+    public sealed class PrivateCtorBaseMiddleware : AuthKitMiddlewareBase
+    {
+        private PrivateCtorBaseMiddleware()
+        {
+        }
+
+        public override Task InvokeAsync(HttpContext context, RequestDelegate next) => next(context);
+    }
+
+    public abstract class NoOverrideBaseMiddleware : AuthKitMiddlewareBase
     {
     }
 
