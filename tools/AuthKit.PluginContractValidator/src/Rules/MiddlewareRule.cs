@@ -5,9 +5,9 @@ using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using AuthKit.PluginContractValidator.Core;
-using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using Microsoft.AspNetCore.Http;
 
 namespace AuthKit.PluginContractValidator.Rules;
@@ -47,10 +47,32 @@ public sealed class MiddlewareRule : IPluginContractRule
                 continue;
             }
 
-            ValidateMiddlewareType(pluginName, middleware.MiddlewareType, errors);
+            if (middleware.Transport == AuthKitTransport.Grpc)
+                ValidateGrpcInterceptorType(pluginName, middleware.MiddlewareType, errors);
+            else
+                ValidateMiddlewareType(pluginName, middleware.MiddlewareType, errors);
         }
 
         return Task.FromResult<IReadOnlyList<string>>(errors);
+    }
+
+    private static void ValidateGrpcInterceptorType(string pluginName, Type middlewareType, List<string> errors)
+    {
+        var typeErrors = new List<string>();
+
+        ValidateCommonShape(middlewareType, typeErrors);
+
+        if (!typeof(Grpc.Core.Interceptors.Interceptor).IsAssignableFrom(middlewareType))
+        {
+            typeErrors.Add(
+                "targets the gRPC transport but is not a Grpc.Core.Interceptors.Interceptor subclass. " +
+                "HTTP middleware (IAuthKitMiddleware, AuthKitMiddlewareBase, convention middleware) " +
+                "cannot run on gRPC; declare Transport = Http or provide an Interceptor instead. " +
+                "No automatic HttpContext bridge is provided.");
+        }
+
+        errors.AddRange(typeErrors.Select(error =>
+            $"middleware: Plugin '{pluginName}' gRPC interceptor '{FormatTypeName(middlewareType)}' is invalid: {error}"));
     }
 
     private static void ValidateMiddlewareType(string pluginName, Type middlewareType, List<string> errors)

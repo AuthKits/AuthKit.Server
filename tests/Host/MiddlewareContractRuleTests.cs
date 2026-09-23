@@ -1,6 +1,6 @@
 using AuthKit.PluginContractValidator.Rules;
-using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using Microsoft.AspNetCore.Http;
 using Xunit;
 using ValidatorLoadedPlugin = AuthKit.PluginContractValidator.Core.LoadedPlugin;
@@ -99,6 +99,60 @@ public sealed class MiddlewareContractRuleTests
         var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
 
         return await _rule.ValidateAsync(loadedPlugin);
+    }
+
+    private async Task<IReadOnlyList<string>> ValidateGrpcAsync(Type middlewareType)
+    {
+        var plugin = new GrpcTestPlugin(middlewareType);
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        return await _rule.ValidateAsync(loadedPlugin);
+    }
+
+    [Fact]
+    public async Task ValidGrpcInterceptor_IsAccepted()
+    {
+        var errors = await ValidateGrpcAsync(typeof(ValidGrpcInterceptor));
+
+        Assert.Empty(errors);
+    }
+
+    [Fact]
+    public async Task NonInterceptorGrpcType_IsRejected()
+    {
+        var errors = await ValidateGrpcAsync(typeof(ConventionMiddleware));
+
+        Assert.Contains(errors, error =>
+            error.Contains(nameof(ConventionMiddleware), StringComparison.Ordinal)
+            && error.Contains("Interceptor", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public async Task AbstractGrpcInterceptor_IsRejected()
+    {
+        var errors = await ValidateGrpcAsync(typeof(AbstractGrpcInterceptor));
+
+        Assert.Contains(errors, error =>
+            error.Contains(nameof(AbstractGrpcInterceptor), StringComparison.Ordinal)
+            && error.Contains("abstract", StringComparison.OrdinalIgnoreCase));
+    }
+
+    private sealed class GrpcTestPlugin(Type middlewareType) : IAuthKitPlugin
+    {
+        public string Name => "TestPlugin";
+
+        public IReadOnlyList<PluginMiddleware> Middlewares =>
+        [
+            new(middlewareType, PipelinePosition.BeforeAuthentication, Transport: AuthKitTransport.Grpc)
+        ];
+    }
+
+    public sealed class ValidGrpcInterceptor : Grpc.Core.Interceptors.Interceptor
+    {
+    }
+
+    public abstract class AbstractGrpcInterceptor : Grpc.Core.Interceptors.Interceptor
+    {
     }
 
     private sealed class TestPlugin(Type middlewareType) : IAuthKitPlugin

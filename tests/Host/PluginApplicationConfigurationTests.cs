@@ -1,6 +1,6 @@
-using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using Host.Plugins.Configuration;
 using Host.Plugins.Loading;
 using Microsoft.AspNetCore.Builder;
@@ -191,5 +191,32 @@ public sealed class PluginApplicationConfigurationTests
         public void ConfigureApplication(IApplicationBuilder application)
         {
         }
+    }
+
+    [Fact]
+    public void ConfigurePluginMiddlewares_SkipsGrpcTransportEntries()
+    {
+        var app = new ApplicationBuilder(new ServiceCollection().BuildServiceProvider());
+
+        // Must not throw at Build(): a gRPC Interceptor has no Invoke/InvokeAsync
+        // and would fail UseMiddleware activation if picked up by the HTTP pipeline.
+        PluginApplicationConfiguration.ConfigurePluginMiddlewares(
+            app, [Load(new GrpcOnlyPlugin())], PipelinePosition.BeforeEndpoints);
+
+        var pipeline = app.Build();
+        Assert.NotNull(pipeline);
+    }
+
+    [PluginMetadata("grpc-only-plugin", "1.0.0", [], [], [], description: "gRPC-only middleware test")]
+    private sealed class GrpcOnlyPlugin : IAuthKitPlugin
+    {
+        public IReadOnlyList<PluginMiddleware> Middlewares =>
+        [
+            new(typeof(GrpcOnlyInterceptor), PipelinePosition.BeforeEndpoints, Transport: AuthKitTransport.Grpc)
+        ];
+    }
+
+    public sealed class GrpcOnlyInterceptor : Grpc.Core.Interceptors.Interceptor
+    {
     }
 }
