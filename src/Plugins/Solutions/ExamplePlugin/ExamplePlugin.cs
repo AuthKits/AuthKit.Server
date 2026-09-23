@@ -75,6 +75,9 @@ public sealed class ExamplePlugin : IAuthKitPlugin
         services.Configure<ExampleOptions>(context.Configuration);
 
         services.AddSingleton(TimeProvider.System);
+        // Registered so the host can resolve ExampleScopedMiddleware (IAuthKitMiddleware)
+        // from the request service provider within the single request scope.
+        services.AddScoped<ExampleScopedMiddleware>();
     }
 
     /// <summary>
@@ -86,6 +89,36 @@ public sealed class ExamplePlugin : IAuthKitPlugin
     /// See <c>ExampleProtocolMiddleware</c> for the conventional middleware contract.
     /// </remarks>
     public Type MiddlewareType => typeof(ExampleProtocolMiddleware);
+
+    /// <summary>
+    /// Declarative middleware registrations (issue #19, C1–C5). The plugin declares
+    /// WHAT middleware it needs; the host owns activation, deterministic ordering
+    /// (Order → stable PluginId → DeclarationIndex), and pipeline insertion.
+    /// </summary>
+    public IReadOnlyList<PluginMiddleware> Middlewares =>
+    [
+        // Convention-based middleware, ordered first at its position.
+        new PluginMiddleware(
+            typeof(ExampleHeaderMiddleware),
+            AuthKit.Plugins.Abstractions.PipelinePosition.BeforeAuthentication,
+            Order: 0,
+            IsMiddlewareEnabled: true,
+            Name: "example-header"),
+        // DI-aware middleware (scoped services from the request scope).
+        new PluginMiddleware(
+            typeof(ExampleScopedMiddleware),
+            AuthKit.Plugins.Abstractions.PipelinePosition.AfterAuthorization,
+            Order: 10,
+            IsMiddlewareEnabled: true,
+            Name: "example-scoped"),
+        // Disabled entry: host skips it without side effects or ordering impact.
+        new PluginMiddleware(
+            typeof(ExampleHeaderMiddleware),
+            AuthKit.Plugins.Abstractions.PipelinePosition.BeforeEndpoints,
+            Order: 0,
+            IsMiddlewareEnabled: false,
+            Name: "example-disabled"),
+    ];
 
     /// <summary>
     /// Registers the reference endpoints on the application's route builder.
