@@ -4,6 +4,7 @@ using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using AuthKit.Plugins.Abstractions.Models;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using FluentValidation;
 using DevTokens.Interfaces;
 using DevTokens.Middleware;
@@ -73,7 +74,10 @@ public sealed class DevTokensPlugin : IAuthKitPlugin
         services.AddScoped<IValidator<DeleteTokenCommand>, DeleteTokenCommandValidator>();
     }
 
-    public Type MiddlewareType => typeof(DeveloperTokenMiddleware);
+    public IReadOnlyList<PluginMiddleware> Middlewares =>
+    [
+        new(typeof(DeveloperTokenMiddleware), PipelinePosition.BeforeAuthentication, Name: "devtokens-validator"),
+    ];
 
     public async Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
         IServiceProvider services,

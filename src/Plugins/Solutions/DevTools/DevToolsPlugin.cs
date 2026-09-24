@@ -3,6 +3,7 @@ using AuthKit.Plugins.Abstractions;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Models;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using DevTools.Catalog;
 using DevTools.Middleware;
 using DevTools.Runtime;
@@ -66,7 +67,10 @@ public sealed class DevToolsPlugin : IAuthKitPlugin
     /// The middleware serving the Swagger UI and the gRPC UI together with
     /// their JSON APIs.
     /// </summary>
-    public Type MiddlewareType => typeof(DevToolsMiddleware);
+    public IReadOnlyList<PluginMiddleware> Middlewares =>
+    [
+        new(typeof(DevToolsMiddleware), PipelinePosition.BeforeAuthentication, Name: "devtools-ui"),
+    ];
 
     /// <summary>
     /// Verifies that the gRPC service catalog is resolvable and can be

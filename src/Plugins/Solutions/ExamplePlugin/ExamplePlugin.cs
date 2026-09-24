@@ -34,7 +34,7 @@ namespace ExamplePlugin;
 /// <list type="bullet">
 /// <item>Metadata through <see cref="PluginMetadataAttribute"/> (identity, capabilities, dependencies).</item>
 /// <item>Configuration through <c>ConfigureServices(IServiceCollection, AuthKitPluginContext)</c>.</item>
-/// <item>Middleware through <see cref="MiddlewareType"/> and <c>ConfigureApplication</c>.</item>
+/// <item>Middleware through declarative <c>Middlewares</c> and <c>ConfigureApplication</c>.</item>
 /// <item>Endpoints through <c>MapEndpoints</c>.</item>
 /// <item>Security schemes, authentication, and authorization.</item>
 /// <item>Structured health checks through <c>CheckHealthAsync</c>.</item>
@@ -80,16 +80,6 @@ public sealed class ExamplePlugin : IAuthKitPlugin
         // from the request service provider within the single request scope.
         services.AddScoped<ExampleScopedMiddleware>();
     }
-
-    /// <summary>
-    /// The legacy middleware entry point. The host inserts this type at the plugin
-    /// middleware slot when the plugin does not implement <c>ConfigureApplication</c>
-    /// or <c>ConfigurePipeline</c>.
-    /// </summary>
-    /// <remarks>
-    /// See <c>ExampleProtocolMiddleware</c> for the conventional middleware contract.
-    /// </remarks>
-    public Type MiddlewareType => typeof(ExampleProtocolMiddleware);
 
     /// <summary>
     /// Declarative middleware registrations (issue #19, C1–C5). The plugin declares
@@ -151,9 +141,6 @@ public sealed class ExamplePlugin : IAuthKitPlugin
     /// Configures the plugin application middleware on the actual host application.
     /// </summary>
     /// <param name="application">The application's pipeline builder.</param>
-    /// <remarks>
-    /// When implemented, this hook takes precedence over <see cref="MiddlewareType"/>.
-    /// </remarks>
     public void ConfigureApplication(IApplicationBuilder application)
     {
         application.Use(async (HttpContext context, RequestDelegate next) =>

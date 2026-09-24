@@ -15,6 +15,6 @@ public sealed class ExampleScopedMiddleware(ILogger<ExampleScopedMiddleware> log
         logger.LogDebug("ExampleScopedMiddleware handling request at {Now}.", timeProvider.GetUtcNow());
         context.Items["example.scoped.middleware"] = timeProvider.GetUtcNow().ToString("O");
         await next(context);
-        // Post-endpoint response processing goes here (after next).
+        // Post endpoint response processing goes here (after next).
     }
 }
