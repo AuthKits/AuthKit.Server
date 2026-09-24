@@ -37,13 +37,25 @@ public sealed class MiddlewareRule : IPluginContractRule
         var pluginName = plugin.Instance.Name;
 
         if (plugin.Instance.MiddlewareType is { } legacyMiddlewareType)
-            ValidateMiddlewareType(pluginName, legacyMiddlewareType, errors);
+            ValidateLegacyMiddlewareType(pluginName, legacyMiddlewareType, errors);
 
         foreach (var middleware in plugin.Instance.Middlewares ?? [])
         {
             if (middleware.MiddlewareType is null)
             {
                 errors.Add($"middleware: Plugin '{pluginName}' declares PluginMiddleware with a null MiddlewareType.");
+                continue;
+            }
+
+            if (!Enum.IsDefined(middleware.Transport))
+            {
+                errors.Add($"middleware: Plugin '{pluginName}' declares middleware '{FormatTypeName(middleware.MiddlewareType)}' with undefined transport '{(int)middleware.Transport}'.");
+                continue;
+            }
+
+            if (!Enum.IsDefined(middleware.Position))
+            {
+                errors.Add($"middleware: Plugin '{pluginName}' declares middleware '{FormatTypeName(middleware.MiddlewareType)}' with undefined position '{(int)middleware.Position}'.");
                 continue;
             }
 
@@ -73,6 +85,21 @@ public sealed class MiddlewareRule : IPluginContractRule
 
         errors.AddRange(typeErrors.Select(error =>
             $"middleware: Plugin '{pluginName}' gRPC interceptor '{FormatTypeName(middlewareType)}' is invalid: {error}"));
+    }
+
+    private static void ValidateLegacyMiddlewareType(string pluginName, Type middlewareType, List<string> errors)
+    {
+        var typeErrors = new List<string>();
+        ValidateCommonShape(middlewareType, typeErrors);
+
+        if (typeof(AuthKitMiddlewareBase).IsAssignableFrom(middlewareType)
+            || typeof(IAuthKitMiddleware).IsAssignableFrom(middlewareType))
+            typeErrors.Add("legacy MiddlewareType supports only convention middleware; declare AuthKit models through Middlewares.");
+        else
+            ValidateConventionMiddleware(middlewareType, typeErrors);
+
+        errors.AddRange(typeErrors.Select(error =>
+            $"middleware: Plugin '{pluginName}' legacy middleware '{FormatTypeName(middlewareType)}' is invalid: {error}"));
     }
 
     private static void ValidateMiddlewareType(string pluginName, Type middlewareType, List<string> errors)
@@ -218,7 +245,8 @@ public sealed class MiddlewareRule : IPluginContractRule
 
         return method.ReturnType == typeof(Task)
             && parameters.Length > 0
-            && parameters[0].ParameterType == typeof(HttpContext);
+            && parameters[0].ParameterType == typeof(HttpContext)
+            && parameters.Skip(1).All(p => p.ParameterType != typeof(RequestDelegate));
     }
 
     private static bool IsValidAuthKitInvokeMethod(MethodInfo method) =>

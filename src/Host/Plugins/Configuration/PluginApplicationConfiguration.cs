@@ -179,7 +179,15 @@ internal static class PluginApplicationConfiguration
         }
     }
 
-    private static void RegisterPluginMiddleware(IApplicationBuilder application, Type middlewareType)
+    private static void RegisterPluginMiddleware(IApplicationBuilder application, Type middlewareType) =>
+        application.UseWhen(
+            static context => !IsGrpcRequest(context),
+            branch => RegisterHttpMiddleware(branch, middlewareType));
+
+    private static bool IsGrpcRequest(HttpContext context) =>
+        context.Request.ContentType?.StartsWith("application/grpc", StringComparison.OrdinalIgnoreCase) == true;
+
+    private static void RegisterHttpMiddleware(IApplicationBuilder application, Type middlewareType)
     {
         if (typeof(IAuthKitMiddleware).IsAssignableFrom(middlewareType))
         {

@@ -191,6 +191,41 @@ public sealed class MiddlewareContractRuleTests
     }
 
     [Fact]
+    public async Task UndefinedTransport_IsRejected()
+    {
+        var plugin = new RawListPlugin([new PluginMiddleware(typeof(ConventionMiddleware), PipelinePosition.BeforeAuthentication, Transport: (AuthKitTransport)99)]);
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        var errors = await _rule.ValidateAsync(loadedPlugin);
+
+        Assert.Contains(errors, error => error.Contains("undefined transport", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Fact]
+    public async Task UndefinedPosition_IsRejected()
+    {
+        var plugin = new RawListPlugin([new PluginMiddleware(typeof(ConventionMiddleware), (PipelinePosition)99)]);
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        var errors = await _rule.ValidateAsync(loadedPlugin);
+
+        Assert.Contains(errors, error => error.Contains("undefined position", StringComparison.OrdinalIgnoreCase));
+    }
+
+    [Theory]
+    [InlineData(typeof(BaseMiddleware))]
+    [InlineData(typeof(InterfaceMiddleware))]
+    public async Task LegacyAuthKitModel_IsRejected(Type middlewareType)
+    {
+        var plugin = new LegacyPlugin(middlewareType);
+        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
+
+        var errors = await _rule.ValidateAsync(loadedPlugin);
+
+        Assert.Contains(errors, error => error.Contains("legacy MiddlewareType supports only convention middleware", StringComparison.Ordinal));
+    }
+
+    [Fact]
     public async Task NonPublicMiddlewareType_IsRejected()
     {
         var errors = await ValidateAsync(typeof(PrivateMiddleware));
@@ -282,7 +317,7 @@ public sealed class MiddlewareContractRuleTests
     {
         private readonly RequestDelegate _next = next;
 
-        public Task InvokeAsync(HttpContext context, RequestDelegate next) =>
+        public Task InvokeAsync(HttpContext context) =>
             _next(context);
     }
 
