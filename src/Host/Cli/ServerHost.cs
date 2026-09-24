@@ -69,7 +69,10 @@ public sealed class ServerHost(
             foreach (var lp in plugins)
             {
                 var description = lp.Plugin.Description ?? "-";
-                var middleware = lp.Plugin.MiddlewareType?.Name ?? "-";
+                var middlewares = lp.Plugin.Middlewares ?? [];
+                var middleware = middlewares.Count > 0
+                    ? string.Join(", ", middlewares.Select(m => m.Name ?? m.MiddlewareType?.Name ?? "?"))
+                    : "-";
                 var schemes = lp.Plugin.GetSecuritySchemes();
                 var schemeNames = schemes.Count > 0 ? string.Join(", ", schemes.Keys) : "-";
 

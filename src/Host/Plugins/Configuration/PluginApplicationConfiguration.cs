@@ -17,10 +17,7 @@ namespace Host.Plugins.Configuration;
 /// plugin identifier using an ordinal comparison.
 /// </para>
 /// <para>
-/// Plugins that do not implement given hook are skipped. The newer
-/// <c>ConfigureApplication</c> and <c>ConfigurePipeline</c> hooks take
-/// precedence over the legacy <c>MiddlewareType</c> entry point, which is
-/// applied only as compatibility fallback.
+/// Plugins that do not implement a given hook are skipped.
 /// </para>
 /// </remarks>
 internal static class PluginApplicationConfiguration
@@ -100,38 +97,6 @@ internal static class PluginApplicationConfiguration
             var plugin = loadedPlugin.Plugin;
             if (HasImplementation(plugin, nameof(IAuthKitPlugin.MapEndpoints), typeof(IEndpointRouteBuilder)))
                 plugin.MapEndpoints(endpoints);
-        }
-    }
-
-    /// <summary>
-    /// Applies the legacy <see cref="IAuthKitPlugin.MiddlewareType"/> for plugins that
-    /// do not opt into the newer application or pipeline hooks.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// Middleware is applied only when the plugin declares it and does not implement
-    /// either <see cref="IAuthKitPlugin.ConfigureApplication(IApplicationBuilder)"/>
-    /// or <see cref="IAuthKitPlugin.ConfigurePipeline(IApplicationBuilder, PluginPipelinePosition)"/>.
-    /// </para>
-    /// <para>
-    /// This preserves the original middleware-based integration for existing plugins
-    /// while routing new plugins through the deterministic hook model.
-    /// </para>
-    /// </remarks>
-    /// <param name="application">The <see cref="WebApplication"/> configured by the host.</param>
-    /// <param name="plugins">The plugins loaded during application startup.</param>
-    public static void ConfigureLegacyMiddleware(WebApplication application, IReadOnlyList<LoadedPlugin> plugins)
-    {
-        foreach (var loadedPlugin in Ordered(plugins))
-        {
-            var plugin = loadedPlugin.Plugin;
-            if (plugin.MiddlewareType is null
-                || HasImplementation(plugin, nameof(IAuthKitPlugin.ConfigureApplication), typeof(IApplicationBuilder))
-                || HasImplementation(plugin, nameof(IAuthKitPlugin.ConfigurePipeline),
-                    typeof(IApplicationBuilder), typeof(PluginPipelinePosition)))
-                continue;
-
-            application.UseMiddleware(plugin.MiddlewareType);
         }
     }
 

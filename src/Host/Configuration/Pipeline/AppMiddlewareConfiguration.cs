@@ -18,9 +18,7 @@ namespace Host.Configuration.Pipeline;
 /// <para>
 /// New pipeline hooks are inserted at their strongly typed
 /// <see cref="PluginPipelinePosition"/>. Plugins at the same position are
-/// ordered by stable plugin ID. Legacy <see cref="AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin.MiddlewareType"/>
-/// middleware remains in its original slot unless the plugin opts into a new
-/// application or pipeline hook.
+/// ordered by stable plugin ID.
 /// </para>
 /// </remarks>
 public static class AppMiddlewareConfiguration
@@ -45,7 +43,6 @@ public static class AppMiddlewareConfiguration
         app.UseMiddleware<ValidationExceptionMiddleware>();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
-        PluginApplicationConfiguration.ConfigureLegacyMiddleware(app, plugins);
         ConfigurePluginSlot(PluginPipelinePosition.BeforeAuthentication, PipelinePosition.BeforeAuthentication);
 
         app.UseMiddleware<ApiKeyCredentialExtractor>();
