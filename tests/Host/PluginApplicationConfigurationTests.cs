@@ -97,15 +97,6 @@ public sealed class PluginApplicationConfigurationTests
                 app, [Load(plugin)], PluginPipelinePosition.BeforeRouting));
     }
 
-    [Fact]
-    public void ConfigureApplication_TakesPrecedenceOverLegacyMiddlewareType()
-    {
-        var app = WebApplication.CreateBuilder().Build();
-
-        PluginApplicationConfiguration.ConfigureLegacyMiddleware(
-            app, [Load(new ApplicationAndLegacyMiddlewarePlugin())]);
-    }
-
     private static LoadedPlugin Load(IAuthKitPlugin plugin) =>
         new(plugin, plugin.GetType().Assembly, "test");
 
@@ -179,16 +170,6 @@ public sealed class PluginApplicationConfigurationTests
         public PluginPipelinePosition PipelinePosition => (PluginPipelinePosition)999;
 
         public void ConfigurePipeline(IApplicationBuilder application, PluginPipelinePosition position)
-        {
-        }
-    }
-
-    [PluginMetadata("application-and-legacy-plugin", "1.0.0", [], [], [], description: "Duplicate registration test")]
-    private sealed class ApplicationAndLegacyMiddlewarePlugin : IAuthKitPlugin
-    {
-        public Type MiddlewareType => typeof(string);
-
-        public void ConfigureApplication(IApplicationBuilder application)
         {
         }
     }

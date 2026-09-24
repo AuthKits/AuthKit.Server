@@ -26,7 +26,7 @@ public sealed class MiddlewareRule : IPluginContractRule
     public string Name => "Middleware";
 
     /// <summary>
-    /// Validates every legacy and declarative middleware type contributed by
+    /// Validates every declarative middleware type contributed by
     /// the plugin.
     /// </summary>
     public Task<IReadOnlyList<string>> ValidateAsync(
@@ -35,9 +35,6 @@ public sealed class MiddlewareRule : IPluginContractRule
     {
         var errors = new List<string>();
         var pluginName = plugin.Instance.Name;
-
-        if (plugin.Instance.MiddlewareType is { } legacyMiddlewareType)
-            ValidateLegacyMiddlewareType(pluginName, legacyMiddlewareType, errors);
 
         foreach (var middleware in plugin.Instance.Middlewares ?? [])
         {
@@ -85,21 +82,6 @@ public sealed class MiddlewareRule : IPluginContractRule
 
         errors.AddRange(typeErrors.Select(error =>
             $"middleware: Plugin '{pluginName}' gRPC interceptor '{FormatTypeName(middlewareType)}' is invalid: {error}"));
-    }
-
-    private static void ValidateLegacyMiddlewareType(string pluginName, Type middlewareType, List<string> errors)
-    {
-        var typeErrors = new List<string>();
-        ValidateCommonShape(middlewareType, typeErrors);
-
-        if (typeof(AuthKitMiddlewareBase).IsAssignableFrom(middlewareType)
-            || typeof(IAuthKitMiddleware).IsAssignableFrom(middlewareType))
-            typeErrors.Add("legacy MiddlewareType supports only convention middleware; declare AuthKit models through Middlewares.");
-        else
-            ValidateConventionMiddleware(middlewareType, typeErrors);
-
-        errors.AddRange(typeErrors.Select(error =>
-            $"middleware: Plugin '{pluginName}' legacy middleware '{FormatTypeName(middlewareType)}' is invalid: {error}"));
     }
 
     private static void ValidateMiddlewareType(string pluginName, Type middlewareType, List<string> errors)

@@ -159,27 +159,6 @@ public sealed class MiddlewareContractRuleTests
     }
 
     [Fact]
-    public async Task LegacyMiddlewareType_IsValidated()
-    {
-        var plugin = new LegacyPlugin(typeof(ConventionMiddleware));
-        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
-
-        Assert.Empty(await _rule.ValidateAsync(loadedPlugin));
-    }
-
-    [Fact]
-    public async Task LegacyMiddlewareType_InvalidIsRejected()
-    {
-        var plugin = new LegacyPlugin(typeof(MissingRequestDelegateMiddleware));
-        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
-
-        var errors = await _rule.ValidateAsync(loadedPlugin);
-
-        Assert.Contains(errors, error =>
-            error.Contains(nameof(MissingRequestDelegateMiddleware), StringComparison.Ordinal));
-    }
-
-    [Fact]
     public async Task NullMiddlewareTypeEntry_IsRejected()
     {
         var plugin = new RawListPlugin([new PluginMiddleware(null!, PipelinePosition.BeforeAuthentication)]);
@@ -210,19 +189,6 @@ public sealed class MiddlewareContractRuleTests
         var errors = await _rule.ValidateAsync(loadedPlugin);
 
         Assert.Contains(errors, error => error.Contains("undefined position", StringComparison.OrdinalIgnoreCase));
-    }
-
-    [Theory]
-    [InlineData(typeof(BaseMiddleware))]
-    [InlineData(typeof(InterfaceMiddleware))]
-    public async Task LegacyAuthKitModel_IsRejected(Type middlewareType)
-    {
-        var plugin = new LegacyPlugin(middlewareType);
-        var loadedPlugin = new ValidatorLoadedPlugin(plugin, typeof(MiddlewareContractRuleTests).Assembly);
-
-        var errors = await _rule.ValidateAsync(loadedPlugin);
-
-        Assert.Contains(errors, error => error.Contains("legacy MiddlewareType supports only convention middleware", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -259,13 +225,6 @@ public sealed class MiddlewareContractRuleTests
 
         Assert.Contains(errors, error =>
             error.Contains("must override InvokeAsync", StringComparison.Ordinal));
-    }
-
-    private sealed class LegacyPlugin(Type middlewareType) : IAuthKitPlugin
-    {
-        public string Name => "TestPlugin";
-
-        public Type? MiddlewareType => middlewareType;
     }
 
     private sealed class RawListPlugin(IReadOnlyList<PluginMiddleware> middlewares) : IAuthKitPlugin

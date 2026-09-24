@@ -8,27 +8,6 @@ namespace AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 public partial interface IAuthKitPlugin
 {
     /// <summary>
-    /// Gets the optional ASP.NET Core middleware type contributed by the plugin.
-    /// </summary>
-    /// <remarks>
-    /// <para>
-    /// When specified, the host inserts the middleware into its request
-    /// processing pipeline at the plugin middleware slot.
-    /// </para>
-    /// <para>
-    /// The middleware type must follow the conventional ASP.NET Core middleware
-    /// pattern, including a constructor accepting <see cref="RequestDelegate"/>
-    /// and an <c>InvokeAsync</c> method accepting <see cref="HttpContext"/>.
-    /// Additional dependencies may be supplied through dependency injection.
-    /// </para>
-    /// <para>
-    /// The default value is <c>null</c>, indicating that the plugin does not
-    /// contribute middleware.
-    /// </para>
-    /// </remarks>
-    Type? MiddlewareType => null;
-
-    /// <summary>
     /// Registers plugin-owned endpoints during host endpoint configuration.
     /// </summary>
     /// <param name="endpoints">The application's endpoint route builder.</param>
@@ -44,10 +23,6 @@ public partial interface IAuthKitPlugin
     /// Configures plugin application middleware on the actual host application.
     /// </summary>
     /// <param name="application">The application's a live builder.</param>
-    /// <remarks>
-    /// When implemented, this hook takes precedence over <see cref="MiddlewareType"/>
-    /// to prevent accidental duplicate middleware registration.
-    /// </remarks>
     void ConfigureApplication(IApplicationBuilder application)
     {
     }
