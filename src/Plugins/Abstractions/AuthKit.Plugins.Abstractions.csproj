@@ -20,7 +20,7 @@
   <ItemGroup>
     <Compile Include="Contracts/**/*.cs" />
     <Compile Include="Models/**/*.cs" />
+    <Compile Include="Pipeline/**/*.cs" />
     <Compile Include="AuthKitApiKeyLocation.cs" />
-    <Compile Include="PluginPipelinePosition.cs" />
   </ItemGroup>
 </Project>

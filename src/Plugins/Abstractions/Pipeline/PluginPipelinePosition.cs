@@ -1,4 +1,4 @@
-namespace AuthKit.Plugins.Abstractions;
+namespace AuthKit.Plugins.Abstractions.Pipeline;
 
 /// <summary>
 /// Defines the supported locations for plugin application middleware.

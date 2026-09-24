@@ -1,4 +1,7 @@
 ﻿using Host.Grpc;
+using Host.Plugins.Configuration;
+using Host.Plugins.Loading;
+using Microsoft.Extensions.Logging;
 
 namespace Host.Configuration.Grpc;
 
@@ -18,16 +21,24 @@ namespace Host.Configuration.Grpc;
 public static class GrpcConfiguration
 {
     /// <summary>
-    /// Registers gRPC services with the dependency injection container.
+    /// Registers gRPC services with the dependency injection container,
+    /// including plugin contributed interceptors.
     /// </summary>
     /// <param name="services">The service collection used to register gRPC services.</param>
+    /// <param name="plugins">The plugins loaded during application startup.</param>
+    /// <param name="logger">Logger for gRPC composition diagnostics.</param>
     /// <returns>The configured <see cref="IServiceCollection"/> instance.</returns>
-    public static IServiceCollection AddGrpcServices(this IServiceCollection services)
+    public static IServiceCollection AddGrpcServices(
+        this IServiceCollection services,
+        IReadOnlyList<LoadedPlugin> plugins,
+        ILogger logger)
     {
         services.AddGrpc(options =>
         {
             //options.Interceptors.Add<ExceptionHandlingInterceptor>();
         });
+
+        services.AddPluginGrpcInterceptors(plugins, logger);
 
         return services;
     }

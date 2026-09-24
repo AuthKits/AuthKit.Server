@@ -1,0 +1,137 @@
+using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+using AuthKit.Plugins.Abstractions.Pipeline;
+using Grpc.AspNetCore.Server;
+using Host.Plugins.Configuration;
+using Host.Plugins.Loading;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
+using Xunit;
+
+namespace AuthKit.Host.Tests;
+
+public sealed class PluginGrpcConfigurationTests
+{
+    [Fact]
+    public void GrpcEntries_AreOrderedByPositionThenOrderThenPluginIdThenIndex()
+    {
+        var plugins = new List<LoadedPlugin>
+        {
+            Load("b-plugin",
+                new(typeof(FakeInterceptor), PipelinePosition.BeforeEndpoints, Order: 5, Transport: AuthKitTransport.Grpc),
+                new(typeof(FakeInterceptor), PipelinePosition.BeforeRouting, Order: 5, Transport: AuthKitTransport.Grpc)),
+            Load("a-plugin",
+                new(typeof(FakeInterceptor), PipelinePosition.BeforeEndpoints, Order: 5, Transport: AuthKitTransport.Grpc),
+                new(typeof(FakeInterceptor), PipelinePosition.BeforeEndpoints, Order: 1, Transport: AuthKitTransport.Grpc)),
+        };
+
+        var ordered = PluginGrpcConfiguration.OrderGrpcInterceptors(plugins);
+
+        Assert.Equal(4, ordered.Count);
+        // Semantic position first.
+        Assert.Equal(PipelinePosition.BeforeRouting, ordered[0].Entry.Position);
+        // Then Order within BeforeEndpoints.
+        Assert.Equal("a-plugin", ordered[1].PluginId);
+        Assert.Equal(1, ordered[1].Entry.Order);
+        // Same position+order: stable PluginId, then declaration index.
+        Assert.Equal("a-plugin", ordered[2].PluginId);
+        Assert.Equal("b-plugin", ordered[3].PluginId);
+    }
+
+    [Fact]
+    public void HttpEntriesAndDisabledEntries_AreExcluded()
+    {
+        var plugins = new List<LoadedPlugin>
+        {
+            Load("http-plugin",
+                new(typeof(FakeInterceptor), PipelinePosition.BeforeRouting, Transport: AuthKitTransport.Http),
+                new(typeof(FakeInterceptor), PipelinePosition.BeforeRouting, IsMiddlewareEnabled: false, Transport: AuthKitTransport.Grpc)),
+        };
+
+        var ordered = PluginGrpcConfiguration.OrderGrpcInterceptors(plugins);
+
+        Assert.Empty(ordered);
+    }
+
+    private static LoadedPlugin Load(string id, params PluginMiddleware[] middlewares) =>
+        new(new FakePlugin(id, middlewares), typeof(PluginGrpcConfigurationTests).Assembly, "/test");
+
+    [Fact]
+    public void AddPluginGrpcInterceptors_RegistersAndComposesChain()
+    {
+        var services = new ServiceCollection();
+        var plugins = new List<LoadedPlugin>
+        {
+            Load("grpc-plugin",
+                new PluginMiddleware(typeof(FakeInterceptor), PipelinePosition.BeforeAuthentication, Transport: AuthKitTransport.Grpc)),
+        };
+
+        PluginGrpcConfiguration.AddPluginGrpcInterceptors(services, plugins, NullLogger.Instance);
+
+        var provider = services.BuildServiceProvider();
+        Assert.NotNull(provider.GetService(typeof(FakeInterceptor)));
+        var options = provider.GetRequiredService<IOptions<GrpcServiceOptions>>().Value;
+        Assert.Contains(typeof(FakeInterceptor), options.Interceptors.Select(r => r.Type));
+    }
+
+    [Fact]
+    public void AddPluginGrpcInterceptors_NullMiddlewareType_Throws()
+    {
+        var services = new ServiceCollection();
+        var plugins = new List<LoadedPlugin>
+        {
+            Load("bad-plugin",
+                new PluginMiddleware(null!, PipelinePosition.BeforeRouting, Transport: AuthKitTransport.Grpc)),
+        };
+
+        Assert.Throws<InvalidOperationException>(() =>
+            PluginGrpcConfiguration.AddPluginGrpcInterceptors(services, plugins, NullLogger.Instance));
+    }
+
+    [Fact]
+    public void AddPluginGrpcInterceptors_NonInterceptorType_Throws()
+    {
+        var services = new ServiceCollection();
+        var plugins = new List<LoadedPlugin>
+        {
+            Load("bad-plugin",
+                new PluginMiddleware(typeof(string), PipelinePosition.BeforeRouting, Transport: AuthKitTransport.Grpc)),
+        };
+
+        var ex = Assert.Throws<InvalidOperationException>(() =>
+            PluginGrpcConfiguration.AddPluginGrpcInterceptors(services, plugins, NullLogger.Instance));
+        Assert.Contains("Interceptor", ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AddPluginGrpcInterceptors_SkipsHttpEntriesWithWarning()
+    {
+        var services = new ServiceCollection();
+        var plugins = new List<LoadedPlugin>
+        {
+            Load("http-plugin",
+                new PluginMiddleware(typeof(FakeInterceptor), PipelinePosition.BeforeRouting, Name: "named-http"),
+                new PluginMiddleware(typeof(FakeInterceptor), PipelinePosition.BeforeRouting),
+                new PluginMiddleware(typeof(FakeInterceptor), PipelinePosition.BeforeRouting, IsMiddlewareEnabled: false)),
+        };
+
+        PluginGrpcConfiguration.AddPluginGrpcInterceptors(services, plugins, NullLogger.Instance);
+
+        var provider = services.BuildServiceProvider();
+        var options = provider.GetRequiredService<IOptions<GrpcServiceOptions>>().Value;
+        Assert.Empty(options.Interceptors);
+    }
+
+    private sealed class FakePlugin(string id, IReadOnlyList<PluginMiddleware> middlewares) : IAuthKitPlugin
+    {
+        public string Id => id;
+
+        public string Name => id;
+
+        public IReadOnlyList<PluginMiddleware> Middlewares => middlewares;
+    }
+
+    public sealed class FakeInterceptor : Grpc.Core.Interceptors.Interceptor
+    {
+    }
+}

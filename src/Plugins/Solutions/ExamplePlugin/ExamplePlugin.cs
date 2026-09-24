@@ -3,6 +3,7 @@ using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using AuthKit.Plugins.Abstractions.Models;
+using AuthKit.Plugins.Abstractions.Pipeline;
 using ExamplePlugin.Authentication;
 using ExamplePlugin.Grpc;
 using ExamplePlugin.Hosting;
@@ -75,6 +76,9 @@ public sealed class ExamplePlugin : IAuthKitPlugin
         services.Configure<ExampleOptions>(context.Configuration);
 
         services.AddSingleton(TimeProvider.System);
+        // Registered so the host can resolve ExampleScopedMiddleware (IAuthKitMiddleware)
+        // from the request service provider within the single request scope.
+        services.AddScoped<ExampleScopedMiddleware>();
     }
 
     /// <summary>
@@ -86,6 +90,44 @@ public sealed class ExamplePlugin : IAuthKitPlugin
     /// See <c>ExampleProtocolMiddleware</c> for the conventional middleware contract.
     /// </remarks>
     public Type MiddlewareType => typeof(ExampleProtocolMiddleware);
+
+    /// <summary>
+    /// Declarative middleware registrations (issue #19, C1–C5). The plugin declares
+    /// WHAT middleware it needs; the host owns activation, deterministic ordering
+    /// (Order → stable PluginId → DeclarationIndex), and pipeline insertion.
+    /// </summary>
+    public IReadOnlyList<PluginMiddleware> Middlewares =>
+    [
+        // Convention-based middleware, ordered first at its position.
+        new PluginMiddleware(
+            typeof(ExampleHeaderMiddleware),
+            AuthKit.Plugins.Abstractions.Pipeline.PipelinePosition.BeforeAuthentication,
+            Order: 0,
+            IsMiddlewareEnabled: true,
+            Name: "example-header"),
+        // DI-aware middleware (scoped services from the request scope).
+        new PluginMiddleware(
+            typeof(ExampleScopedMiddleware),
+            AuthKit.Plugins.Abstractions.Pipeline.PipelinePosition.AfterAuthorization,
+            Order: 10,
+            IsMiddlewareEnabled: true,
+            Name: "example-scoped"),
+        // Disabled entry: host skips it without side effects or ordering impact.
+        new PluginMiddleware(
+            typeof(ExampleHeaderMiddleware),
+            AuthKit.Plugins.Abstractions.Pipeline.PipelinePosition.BeforeEndpoints,
+            Order: 0,
+            IsMiddlewareEnabled: false,
+            Name: "example-disabled"),
+        // gRPC interceptor: composed into the host interceptor chain.
+        new PluginMiddleware(
+            typeof(ExampleLoggingInterceptor),
+            AuthKit.Plugins.Abstractions.Pipeline.PipelinePosition.BeforeEndpoints,
+            Order: 0,
+            IsMiddlewareEnabled: true,
+            Name: "example-grpc-logging",
+            Transport: AuthKitTransport.Grpc),
+    ];
 
     /// <summary>
     /// Registers the reference endpoints on the application's route builder.

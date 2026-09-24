@@ -47,14 +47,14 @@ FROM build AS publish
 WORKDIR /src
 RUN dotnet publish "src/Host/Host.csproj" -c Release -o /app/publish
 RUN dotnet publish "src/Plugins/Solutions/DevTokens/DevTokens.csproj" -c Release -o /app/publish/plugins/DevTokens
-COPY src/Plugins/Solutions/DevTokens/manifest.json /app/publish/plugins/DevTokens/manifest.json
+RUN if [ -f src/Plugins/Solutions/DevTokens/manifest.json ]; then cp src/Plugins/Solutions/DevTokens/manifest.json /app/publish/plugins/DevTokens/manifest.json; else echo "DevTokens manifest.json not in context, skipping"; fi
 
 COPY --from=ui /ui/dist/ui.html src/Plugins/Solutions/DevTools/UI/dist/ui.html
 RUN dotnet publish "src/Plugins/Solutions/DevTools/DevTools.csproj" -c Release -o /app/publish/plugins/DevTools
-COPY src/Plugins/Solutions/DevTools/manifest.json /app/publish/plugins/DevTools/manifest.json
+RUN if [ -f src/Plugins/Solutions/DevTools/manifest.json ]; then cp src/Plugins/Solutions/DevTools/manifest.json /app/publish/plugins/DevTools/manifest.json; else echo "DevTools manifest.json not in context, skipping"; fi
 
 RUN dotnet publish "src/Plugins/Solutions/ExamplePlugin/ExamplePlugin.csproj" -c Release -o /app/publish/plugins/ExamplePlugin
-COPY src/Plugins/Solutions/ExamplePlugin/manifest.json /app/publish/plugins/ExamplePlugin/manifest.json
+RUN if [ -f src/Plugins/Solutions/ExamplePlugin/manifest.json ]; then cp src/Plugins/Solutions/ExamplePlugin/manifest.json /app/publish/plugins/ExamplePlugin/manifest.json; else echo "ExamplePlugin manifest.json not in context, skipping"; fi
 
 FROM base AS final
 WORKDIR /app

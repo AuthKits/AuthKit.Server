@@ -2,9 +2,7 @@ using Host.Plugins.Loading;
 using Host.Plugins.Configuration;
 using Host.Restful.Middleware.Exceptions;
 using Host.Security.Middleware;
-using AuthKit.Plugins.Abstractions;
-using AuthKit.Plugins.Abstractions.Contracts;
-using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
+using AuthKit.Plugins.Abstractions.Pipeline;
 
 namespace Host.Configuration.Pipeline;
 
@@ -14,7 +12,7 @@ namespace Host.Configuration.Pipeline;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Configures routing, validation and exception handling, plugin-provided
+/// Configures routing, validation and exception handling, plugin provided
 /// middleware, and authentication and authorization.
 /// </para>
 /// <para>
@@ -40,25 +38,43 @@ public static class AppMiddlewareConfiguration
         IReadOnlyList<LoadedPlugin> plugins)
     {
         PluginApplicationConfiguration.ConfigureApplications(app, plugins);
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeRouting);
+        ConfigurePluginSlot(PluginPipelinePosition.BeforeRouting, PipelinePosition.BeforeRouting);
         app.UseRouting();
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.AfterRouting);
+        ConfigurePluginSlot(PluginPipelinePosition.AfterRouting, PipelinePosition.AfterRouting);
 
         app.UseMiddleware<ValidationExceptionMiddleware>();
         app.UseMiddleware<ExceptionHandlingMiddleware>();
 
         PluginApplicationConfiguration.ConfigureLegacyMiddleware(app, plugins);
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeAuthentication);
+        ConfigurePluginSlot(PluginPipelinePosition.BeforeAuthentication, PipelinePosition.BeforeAuthentication);
 
         app.UseMiddleware<ApiKeyCredentialExtractor>();
 
         app.UseAuthentication();
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.AfterAuthentication);
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeAuthorization);
+        ConfigurePluginSlot(PluginPipelinePosition.AfterAuthentication);
+        ConfigurePluginSlot(PluginPipelinePosition.BeforeAuthorization);
         app.UseAuthorization();
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.AfterAuthorization);
-        PluginApplicationConfiguration.ConfigurePipeline(app, plugins, PluginPipelinePosition.BeforeEndpoints);
+        ConfigurePluginSlot(PluginPipelinePosition.AfterAuthorization, PipelinePosition.AfterAuthorization);
+        ConfigurePluginSlot(PluginPipelinePosition.BeforeEndpoints, PipelinePosition.BeforeEndpoints);
+
+        // AfterEndpointExecution is post endpoint (response) execution: registered here, before
+        // endpoint mapping, so each middleware wraps the endpoint and its post-next code runs
+        // after the endpoint has executed.
+        ConfigureMiddlewareSlot(PipelinePosition.AfterEndpointExecution);
 
         return app;
+
+        void ConfigurePluginSlot(
+            PluginPipelinePosition pipelinePosition,
+            PipelinePosition? middlewarePosition = null)
+        {
+            PluginApplicationConfiguration.ConfigurePipeline(app, plugins, pipelinePosition);
+
+            if (middlewarePosition is { } position)
+                ConfigureMiddlewareSlot(position);
+        }
+
+        void ConfigureMiddlewareSlot(PipelinePosition middlewarePosition) =>
+            PluginApplicationConfiguration.ConfigurePluginMiddlewares(app, plugins, middlewarePosition);
     }
 }

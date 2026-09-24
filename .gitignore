@@ -25,3 +25,4 @@ src/Plugins/Solutions/DevTools/manifest.json
 issues/
 *.DotSettings.user
 Docs/package-lock.json
+TestResults
