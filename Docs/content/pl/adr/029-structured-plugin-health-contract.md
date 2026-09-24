@@ -1,4 +1,4 @@
-[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) | [Następny]()
+[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) | [Następny](/pl/adr/030-plugin-middleware-pipeline/)
 
 # [ADR-029] Eksponowanie ustrukturyzowanych i anulowalnych wyników kondycji wtyczek
 
@@ -71,4 +71,4 @@ kontraktu wywołuje nową metodę i odrzuca pustą kolekcję wyników.
 - [Issue #14](https://github.com/AuthKits/AuthKit.Server/issues/14) - ustrukturyzowany wynik kondycji wtyczki
 - [Issue #15](https://github.com/AuthKits/AuthKit.Server/issues/15) - wiele wyników i anulowanie
 
-[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) | [Następny]()
+[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) | [Następny](/pl/adr/030-plugin-middleware-pipeline/)

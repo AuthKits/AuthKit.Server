@@ -79,6 +79,7 @@ The table below shows the architecture areas and their current scope.
 | [ADR-027](./027-devtools-ui-typescript.md) | Compile The DevTools UI From Modular TypeScript Into A Single Embedded Resource | Plugins | accepted | 2026-09-16 |
 | [ADR-028](./028-plugin-contract-and-dynamic-loading-architecture.md) | Define The Plugin Contract And Dynamic Loading Architecture | Plugins | accepted | 2026-09-11 |
 | [ADR-029](./029-structured-plugin-health-contract.md) | Expose Structured And Cancellable Plugin Health Results | Plugins | accepted | 2026-09-13 |
+| [ADR-030](./030-plugin-middleware-pipeline.md) | Declare Plugin Middleware As A First-Class Transport-Explicit Pipeline | Plugins | accepted | 2026-09-24 |
 
 ## Relationships Between Areas
 

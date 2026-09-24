@@ -79,6 +79,7 @@ Poniższa tabela przedstawia obszary architektury i ich bieżący zakres.
 | [ADR-027](/pl/adr/027-devtools-ui-typescript/) | Kompiluj interfejs DevTools z modularnego TypeScript do pojedynczego zasobu osadzonego | Plugins | accepted | 2026-09-16 |
 | [ADR-028](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) | Zdefiniuj kontrakt wtyczek i architekturę dynamicznego ładowania | Plugins | accepted | 2026-09-11 |
 | [ADR-029](/pl/adr/029-structured-plugin-health-contract/) | Eksponowanie ustrukturyzowanych i anulowalnych wyników kondycji wtyczek | Plugins | accepted | 2026-09-13 |
+| [ADR-030](/pl/adr/030-plugin-middleware-pipeline/) | Deklaratywny Pipeline Middleware Pluginów Z Jawnym Transportem | Plugins | accepted | 2026-09-24 |
 
 ## Relacje pomiędzy obszarami
 
