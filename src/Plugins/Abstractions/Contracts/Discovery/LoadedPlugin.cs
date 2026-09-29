@@ -1,3 +1,4 @@
+using System.Runtime.Loader;
 using AuthKit.Plugins.Abstractions.Contracts.PluginContract;
 using AuthKit.Plugins.Abstractions.Models;
 
@@ -27,4 +28,11 @@ public sealed record LoadedPlugin
     /// Constructed plugin instance. Not activated.
     /// </summary>
     public required IAuthKitPlugin Instance { get; init; }
+
+    /// <summary>
+    /// Isolated load context the plugin was loaded into. Host and framework
+    /// assemblies are shared; only plugin-private dependencies are isolated.
+    /// Collectible to enable future unload/hot-reload orchestration.
+    /// </summary>
+    public required AssemblyLoadContext LoadContext { get; init; }
 }

@@ -27,8 +27,11 @@ var pluginLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateL
 var hostVersion = SemanticVersion.Parse(Assembly.GetEntryAssembly()!
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
         .InformationalVersion!.Split('+')[0]);
+var discoveryCachePath = builder.Configuration["AuthKit:DiscoveryCachePath"]
+    ?? Path.Combine(Path.GetTempPath(), "authkit-discovery-cache.json");
+var discoveryCache = new FilePluginDiscoveryCache(discoveryCachePath, pluginLogger);
 
-var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger, hostVersion);
+var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger, hostVersion, builder.Configuration, discoveryCache);
 
 var restfulLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("RestfulConfiguration");
 var grpcLogger = LoggerFactory.Create(logging => logging.AddConsole()).CreateLogger("GrpcConfiguration");
