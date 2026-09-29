@@ -29,7 +29,7 @@ public class PluginContractValidatorTests
 
         public string Name => "Fake";
         public SemanticVersion Version => new(1, 0, 0);
-        public void ConfigureServices(IServiceCollection services, IConfiguration configuration) { }
+        public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) { }
         public IReadOnlyDictionary<string, AuthKitSecuritySchemeDescriptor> GetSecuritySchemes() => _schemes;
     }
 
