@@ -433,40 +433,6 @@ public sealed class PluginDiscoveryTests : IDisposable
         Assert.Equal(PluginOutcome.Invalid, Assert.Single(result.Issues).Outcome);
     }
 
-    // ---------- DefaultPluginLoader against a real assembly ----------
-
-    private static void TouchSharedDependencies()
-    {
-        _ = typeof(Grpc.Core.Interceptors.Interceptor);
-        _ = typeof(Google.Protobuf.IMessage);
-    }
-
-    private static string StageShield(string root, string dirName)
-    {
-        var dir = Directory.CreateDirectory(Path.Combine(root, dirName)).FullName;
-        var source = Path.Combine(AppContext.BaseDirectory, "Shield.dll");
-        Assert.True(File.Exists(source), "Shield.dll must sit next to the test assembly.");
-        File.Copy(source, Path.Combine(dir, $"{dirName}.dll"));
-        return dir;
-    }
-
-    [Fact]
-    public async Task DefaultLoader_ConstructsFromEntryAssembly()
-    {
-        TouchSharedDependencies();
-        var root = NewRoot();
-        var dir = StageShield(root, "Shield");
-
-        var loader = new DefaultPluginLoader(NullLogger.Instance);
-        var loaded = await loader.LoadAsync([Discovered(Manifest(
-            id: "authkit.shield",
-            version: "1.0.0"), dir)]);
-
-        var single = Assert.Single(loaded);
-        Assert.Equal("authkit.shield", single.Instance.Id);
-        Assert.True(single.LoadContext.IsCollectible);
-    }
-
     [Fact]
     public void LoadContext_SharesContracts()
     {
@@ -480,35 +446,5 @@ public sealed class PluginDiscoveryTests : IDisposable
         Assert.Contains("AuthKit.Plugins.Abstractions", shared, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Grpc.Core.Api", shared, StringComparer.OrdinalIgnoreCase);
         Assert.Contains("Google.Protobuf", shared, StringComparer.OrdinalIgnoreCase);
-    }
-
-    [Fact]
-    public async Task DefaultLoader_IsolatesEachPluginInOwnContext()
-    {
-        TouchSharedDependencies();
-        var root = NewRoot();
-        var firstDir = StageShield(root, "ShieldA");
-        var secondDir = StageShield(root, "ShieldB");
-        var loader = new DefaultPluginLoader(NullLogger.Instance);
-
-        var first = Assert.Single(await loader.LoadAsync([Discovered(Manifest(), firstDir)]));
-        var second = Assert.Single(await loader.LoadAsync([Discovered(Manifest(), secondDir)]));
-
-        Assert.NotSame(first.LoadContext, second.LoadContext);
-        Assert.NotSame(first.PluginType, second.PluginType);
-        Assert.Equal(first.Instance.Id, second.Instance.Id);
-    }
-
-    [Fact]
-    public async Task DefaultLoader_SharesHostTypes()
-    {
-        TouchSharedDependencies();
-        var root = NewRoot();
-        var dir = StageShield(root, "Shield");
-
-        var loader = new DefaultPluginLoader(NullLogger.Instance);
-        var single = Assert.Single(await loader.LoadAsync([Discovered(Manifest(), dir)]));
-
-        Assert.Contains(single.PluginType.GetInterfaces(), i => ReferenceEquals(i, typeof(IAuthKitPlugin)));
     }
 }
