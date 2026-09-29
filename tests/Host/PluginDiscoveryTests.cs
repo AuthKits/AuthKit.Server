@@ -1,11 +1,15 @@
+using AuthKit.Plugins.Abstractions;
+using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Discovery;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
+using AuthKit.Plugins.Abstractions.Contracts.SecuritySchemes;
 using AuthKit.Plugins.Abstractions.Models;
 using Host.Plugins.Loading;
 using Host.Plugins.Loading.Gate;
 using Host.Plugins.Loading.Manifest;
 using Host.Plugins.Loading.Pipeline;
 using Host.Plugins.Loading.Results;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging.Abstractions;
 using Xunit;
 using ContractLoadedPlugin = AuthKit.Plugins.Abstractions.Contracts.Discovery.LoadedPlugin;
@@ -69,8 +73,8 @@ public sealed class PluginDiscoveryTests : IDisposable
             found.Add(candidate);
 
         Assert.Equal(2, found.Count);
-        Assert.Equal("test.a", found.First(c => c.Location == withJson).Manifest.Id);
-        Assert.Equal("test.b", found.First(c => c.Location == withManifest).Manifest.Id);
+        Assert.Equal("test.a", found.First(c => c.Location == withJson).Manifest!.Id);
+        Assert.Equal("test.b", found.First(c => c.Location == withManifest).Manifest!.Id);
         Assert.All(found, c => Assert.Null(c.DiscoveryError));
     }
 
@@ -249,8 +253,26 @@ public sealed class PluginDiscoveryTests : IDisposable
     {
     }
 
+    [PluginMetadata("test.fake", "1.0.0", [], [], [], name: "Fake", description: "Fake plugin")]
+    private sealed class BadSchemePlugin : IAuthKitPlugin
+    {
+        public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) { }
+
+        public IReadOnlyDictionary<string, AuthKitSecuritySchemeDescriptor> GetSecuritySchemes() =>
+            new Dictionary<string, AuthKitSecuritySchemeDescriptor>
+            {
+                ["bad"] = new()
+                {
+                    Name = "bad",
+                    Type = (AuthKitSecuritySchemeType)999,
+                    In = AuthKitApiKeyLocation.Header,
+                    Description = "Invalid scheme.",
+                },
+            };
+    }
+
     private static DiscoveredPlugin Discovered(
-        PluginManifest manifest,
+        PluginManifest? manifest,
         string location = "/plugins/fake",
         string? error = null) =>
         new() { Manifest = manifest, Location = location, DiscoveryError = error };
@@ -261,6 +283,7 @@ public sealed class PluginDiscoveryTests : IDisposable
             Manifest = manifest,
             PluginType = (instance ?? new FakePlugin()).GetType(),
             Instance = instance ?? new FakePlugin(),
+            LoadContext = System.Runtime.Loader.AssemblyLoadContext.Default,
         };
 
     private static PluginLoadingPipeline Pipeline(
@@ -272,7 +295,7 @@ public sealed class PluginDiscoveryTests : IDisposable
     [Fact]
     public async Task Pipeline_AcceptsCompatibleManifestPlugin()
     {
-        var pipeline = Pipeline([Discovered(Manifest())], candidate => Loaded(candidate.Manifest));
+        var pipeline = Pipeline([Discovered(Manifest())], candidate => Loaded(candidate.Manifest!));
 
         var result = await pipeline.RunAsync();
 
@@ -289,7 +312,7 @@ public sealed class PluginDiscoveryTests : IDisposable
         var pipeline = Pipeline([Discovered(Manifest(enabled: false))], candidate =>
         {
             loaderCalls++;
-            return Loaded(candidate.Manifest);
+            return Loaded(candidate.Manifest!);
         });
 
         var result = await pipeline.RunAsync();
@@ -307,7 +330,7 @@ public sealed class PluginDiscoveryTests : IDisposable
         var pipeline = Pipeline([Discovered(Manifest(minHost: "2.0.0"))], candidate =>
         {
             loaderCalls++;
-            return Loaded(candidate.Manifest);
+            return Loaded(candidate.Manifest!);
         });
 
         var result = await pipeline.RunAsync();
@@ -326,7 +349,7 @@ public sealed class PluginDiscoveryTests : IDisposable
             Discovered(Manifest(), "/plugins/b"),
             Discovered(Manifest(), "/plugins/a"),
         ],
-        candidate => Loaded(candidate.Manifest));
+        candidate => Loaded(candidate.Manifest!));
 
         var result = await pipeline.RunAsync();
 
@@ -342,7 +365,7 @@ public sealed class PluginDiscoveryTests : IDisposable
     {
         var pipeline = Pipeline(
             [Discovered(Manifest(id: "test.other"))],
-            candidate => Loaded(candidate.Manifest));
+            candidate => Loaded(candidate.Manifest!));
 
         var result = await pipeline.RunAsync();
 
@@ -358,7 +381,7 @@ public sealed class PluginDiscoveryTests : IDisposable
         var pipeline = Pipeline([Discovered(null, error: "boom")], candidate =>
         {
             loaderCalls++;
-            return Loaded(candidate.Manifest);
+            return Loaded(candidate.Manifest!);
         });
 
         var result = await pipeline.RunAsync();
@@ -386,6 +409,20 @@ public sealed class PluginDiscoveryTests : IDisposable
     }
 
     [Fact]
+    public async Task Pipeline_RejectsContractViolations()
+    {
+        var pipeline = Pipeline(
+            [Discovered(Manifest())],
+            _ => Loaded(Manifest(), new BadSchemePlugin()));
+
+        var result = await pipeline.RunAsync();
+
+        Assert.Empty(result.Loaded);
+        var issue = Assert.Single(result.Issues);
+        Assert.Equal(PluginOutcome.Invalid, issue.Outcome);
+    }
+
+    [Fact]
     public async Task Pipeline_ReportsLoaderFailuresAsInvalid()
     {
         var pipeline = Pipeline([Discovered(Manifest())], _ => null);
@@ -398,14 +435,27 @@ public sealed class PluginDiscoveryTests : IDisposable
 
     // ---------- DefaultPluginLoader against a real assembly ----------
 
+    private static void TouchSharedDependencies()
+    {
+        _ = typeof(Grpc.Core.Interceptors.Interceptor);
+        _ = typeof(Google.Protobuf.IMessage);
+    }
+
+    private static string StageShield(string root, string dirName)
+    {
+        var dir = Directory.CreateDirectory(Path.Combine(root, dirName)).FullName;
+        var source = Path.Combine(AppContext.BaseDirectory, "Shield.dll");
+        Assert.True(File.Exists(source), "Shield.dll must sit next to the test assembly.");
+        File.Copy(source, Path.Combine(dir, $"{dirName}.dll"));
+        return dir;
+    }
+
     [Fact]
     public async Task DefaultLoader_ConstructsFromEntryAssembly()
     {
+        TouchSharedDependencies();
         var root = NewRoot();
-        var dir = Directory.CreateDirectory(Path.Combine(root, "Shield")).FullName;
-        var source = Path.Combine(AppContext.BaseDirectory, "Shield.dll");
-        Assert.True(File.Exists(source), "Shield.dll must sit next to the test assembly.");
-        File.Copy(source, Path.Combine(dir, "Shield.dll"));
+        var dir = StageShield(root, "Shield");
 
         var loader = new DefaultPluginLoader(NullLogger.Instance);
         var loaded = await loader.LoadAsync([Discovered(Manifest(
@@ -414,5 +464,51 @@ public sealed class PluginDiscoveryTests : IDisposable
 
         var single = Assert.Single(loaded);
         Assert.Equal("authkit.shield", single.Instance.Id);
+        Assert.True(single.LoadContext.IsCollectible);
+    }
+
+    [Fact]
+    public void LoadContext_SharesContracts()
+    {
+        var field = typeof(global::Host.Plugins.Loading.PluginLoadContext).GetField(
+            "SharedContracts",
+            System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+
+        var shared = Assert.IsAssignableFrom<System.Collections.Generic.HashSet<string>>(
+            field?.GetValue(null));
+
+        Assert.Contains("AuthKit.Plugins.Abstractions", shared, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Grpc.Core.Api", shared, StringComparer.OrdinalIgnoreCase);
+        Assert.Contains("Google.Protobuf", shared, StringComparer.OrdinalIgnoreCase);
+    }
+
+    [Fact]
+    public async Task DefaultLoader_IsolatesEachPluginInOwnContext()
+    {
+        TouchSharedDependencies();
+        var root = NewRoot();
+        var firstDir = StageShield(root, "ShieldA");
+        var secondDir = StageShield(root, "ShieldB");
+        var loader = new DefaultPluginLoader(NullLogger.Instance);
+
+        var first = Assert.Single(await loader.LoadAsync([Discovered(Manifest(), firstDir)]));
+        var second = Assert.Single(await loader.LoadAsync([Discovered(Manifest(), secondDir)]));
+
+        Assert.NotSame(first.LoadContext, second.LoadContext);
+        Assert.NotSame(first.PluginType, second.PluginType);
+        Assert.Equal(first.Instance.Id, second.Instance.Id);
+    }
+
+    [Fact]
+    public async Task DefaultLoader_SharesHostTypes()
+    {
+        TouchSharedDependencies();
+        var root = NewRoot();
+        var dir = StageShield(root, "Shield");
+
+        var loader = new DefaultPluginLoader(NullLogger.Instance);
+        var single = Assert.Single(await loader.LoadAsync([Discovered(Manifest(), dir)]));
+
+        Assert.Contains(single.PluginType.GetInterfaces(), i => ReferenceEquals(i, typeof(IAuthKitPlugin)));
     }
 }
