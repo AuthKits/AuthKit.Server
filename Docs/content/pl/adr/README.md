@@ -80,6 +80,7 @@ Poniższa tabela przedstawia obszary architektury i ich bieżący zakres.
 | [ADR-028](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) | Zdefiniuj kontrakt wtyczek i architekturę dynamicznego ładowania | Plugins | accepted | 2026-09-11 |
 | [ADR-029](/pl/adr/029-structured-plugin-health-contract/) | Eksponowanie ustrukturyzowanych i anulowalnych wyników kondycji wtyczek | Plugins | accepted | 2026-09-13 |
 | [ADR-030](/pl/adr/030-plugin-middleware-pipeline/) | Deklaratywny Pipeline Middleware Pluginów Z Jawnym Transportem | Plugins | accepted | 2026-09-24 |
+| [ADR-031](/pl/adr/031-plugin-discovery-manifest-gate/) | Odkrywanie Pluginów Przez Manifesty Z Bramką Kompatybilności Przed Ładowaniem | Plugins | accepted | 2026-09-24 |
 
 ## Relacje pomiędzy obszarami
 

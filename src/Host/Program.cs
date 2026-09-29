@@ -6,6 +6,7 @@ using Host.Configuration.Pipeline;
 using Host.Configuration.Restful;
 using Host.Configuration.Server;
 using Host.Plugins.Loading;
+using Host.Plugins.Loading.Pipeline;
 using Host.Plugins.Configuration;
 using Host.Plugins.Lifecycle;
 using Host.Cli;

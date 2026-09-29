@@ -1,4 +1,4 @@
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./029-structured-plugin-health-contract.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./029-structured-plugin-health-contract.md) | [Next](./031-plugin-discovery-manifest-gate.md)
 
 # [ADR-030] Declare Plugin Middleware As A First-Class Transport-Explicit Pipeline
 
@@ -54,4 +54,4 @@ A single implicit middleware slot cannot express ordering across plugins, per-en
 - [ADR-013](./013-dual-rest-and-grpc-transport.md) - dual REST and gRPC transport surfaces
 - [ADR-009](./009-dynamic-plugin-discovery.md) - plugin discovery and contract boundary
 
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./029-structured-plugin-health-contract.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./029-structured-plugin-health-contract.md) | [Next](./031-plugin-discovery-manifest-gate.md)

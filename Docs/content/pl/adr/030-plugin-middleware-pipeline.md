@@ -1,4 +1,4 @@
-[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/029-structured-plugin-health-contract/) | [Następny]()
+[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/029-structured-plugin-health-contract/) | [Następny](/pl/adr/031-plugin-discovery-manifest-gate/)
 
 # [ADR-030] Deklaratywny Pipeline Middleware Pluginów Z Jawnym Transportem
 
@@ -54,4 +54,4 @@ Pojedynczy implicit slot nie wyraża kolejności między pluginami, włączania 
 - [ADR-013](/pl/adr/013-dual-rest-and-grpc-transport/) - dualny transport REST i gRPC
 - [ADR-009](/pl/adr/009-dynamic-plugin-discovery/) - discovery pluginów i granica kontraktu
 
-[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/029-structured-plugin-health-contract/) | [Następny]()
+[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/029-structured-plugin-health-contract/) | [Następny](/pl/adr/031-plugin-discovery-manifest-gate/)
