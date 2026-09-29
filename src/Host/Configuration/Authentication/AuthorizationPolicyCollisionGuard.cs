@@ -27,8 +27,8 @@ namespace Host.Configuration.Authentication;
 /// </remarks>
 internal static class AuthorizationPolicyCollisionGuard
 {
-    private static readonly Func<AuthorizationOptions, IReadOnlySet<string>> PolicyNameReader =
-        CreatePolicyNameReader();
+    private static readonly Func<AuthorizationOptions, IReadOnlyDictionary<string, object?>> PolicyMapReader =
+        CreatePolicyMapReader();
 
     /// <summary>
     /// Runs every plugin's authorization configuration against the host options while
@@ -44,41 +44,46 @@ internal static class AuthorizationPolicyCollisionGuard
         IReadOnlyList<LoadedPlugin> plugins)
     {
         var owners = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        var hostBaseline = PolicyMapReader(options);
 
         foreach (var plugin in plugins.OrderBy(plugin => plugin.Plugin.Id, StringComparer.Ordinal))
         {
-            var before = PolicyNameReader(options);
+            var before = PolicyMapReader(options);
             plugin.Plugin.ConfigureAuthorization(options);
-            var after = PolicyNameReader(options);
+            var after = PolicyMapReader(options);
 
-            foreach (var name in after)
+            foreach (var (name, policy) in after)
             {
-                if (!before.Contains(name) && !owners.ContainsKey(name))
-                {
-                    owners[name] = plugin.Plugin.Id;
+                if (before.TryGetValue(name, out var previous) && ReferenceEquals(previous, policy))
                     continue;
-                }
 
+                // Added or replaced by this plugin's hook.
                 var owner = owners.TryGetValue(name, out var existing)
                     ? existing
-                    : "<host>";
-                throw new InvalidOperationException(
-                    $"Authorization policy '{name}' is registered by both plugin '{owner}' " +
-                    $"and plugin '{plugin.Plugin.Id}'. Authorization policy names are globally " +
-                    "significant and each policy must be owned by exactly one plugin. Use " +
-                    "namespaced policy names (for example 'PluginName.Read') to avoid collisions.");
+                    : hostBaseline.ContainsKey(name)
+                        ? "<host>"
+                        : null;
+
+                if (owner is not null)
+                    throw new InvalidOperationException(
+                        $"Authorization policy '{name}' is registered by both plugin '{owner}' " +
+                        $"and plugin '{plugin.Plugin.Id}'. Authorization policy names are globally " +
+                        "significant and each policy must be owned by exactly one plugin. Use " +
+                        "namespaced policy names (for example 'PluginName.Read') to avoid collisions.");
+
+                owners[name] = plugin.Plugin.Id;
             }
         }
     }
 
-    private static Func<AuthorizationOptions, IReadOnlySet<string>> CreatePolicyNameReader()
+    private static Func<AuthorizationOptions, IReadOnlyDictionary<string, object?>> CreatePolicyMapReader()
     {
         const BindingFlags flags = BindingFlags.Instance | BindingFlags.NonPublic;
 
         var singleMap = typeof(AuthorizationOptions).GetField("<PolicyMap>k__BackingField", flags);
         if (singleMap is not null)
         {
-            return options => ReadKeys(singleMap.GetValue(options));
+            return options => ReadEntries(singleMap.GetValue(options));
         }
 
         var policyMap = typeof(AuthorizationOptions).GetField("_policyMap", flags);
@@ -87,10 +92,12 @@ internal static class AuthorizationPolicyCollisionGuard
         {
             return options =>
             {
-                var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-                names.UnionWith(ReadKeys(policyMap.GetValue(options)));
-                names.UnionWith(ReadKeys(configurePolicyMap.GetValue(options)));
-                return names;
+                var entries = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+                foreach (var (key, value) in ReadEntries(policyMap.GetValue(options)))
+                    entries[key] = value;
+                foreach (var (key, value) in ReadEntries(configurePolicyMap.GetValue(options)))
+                    entries[key] = value;
+                return entries;
             };
         }
 
@@ -101,7 +108,7 @@ internal static class AuthorizationPolicyCollisionGuard
             "policies registered by plugins.");
     }
 
-    private static IReadOnlySet<string> ReadKeys(object? map)
+    private static IReadOnlyDictionary<string, object?> ReadEntries(object? map)
     {
         if (map is not IDictionary dictionary)
         {
@@ -111,12 +118,12 @@ internal static class AuthorizationPolicyCollisionGuard
                 "collisions cannot be detected.");
         }
 
-        var names = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        foreach (var key in dictionary.Keys)
+        var entries = new Dictionary<string, object?>(StringComparer.OrdinalIgnoreCase);
+        foreach (DictionaryEntry entry in dictionary)
         {
-            names.Add((string)key!);
+            entries[(string)entry.Key!] = entry.Value;
         }
 
-        return names;
+        return entries;
     }
 }
