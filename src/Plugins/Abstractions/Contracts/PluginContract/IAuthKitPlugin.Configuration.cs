@@ -10,8 +10,8 @@ public partial interface IAuthKitPlugin
     /// <summary>
     /// Registers the plugin's services in the host dependency injection container.
     /// </summary>
-    /// <param name="services"> The host's dependency injection service collection.</param>
-    /// <param name="configuration">The host application configuration.</param>
+    /// <param name="services">The <see cref="IServiceCollection"/> used to register plugin services.</param>
+    /// <param name="context">Stable plugin context including the plugin-scoped configuration section.</param>
     /// <remarks>
     /// <para>
     /// This method is called while the host application is being configured,
@@ -23,11 +23,9 @@ public partial interface IAuthKitPlugin
     /// container.
     /// </para>
     /// </remarks>
-    void ConfigureServices(
-        IServiceCollection services,
-        IConfiguration configuration) =>
+    void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) =>
         throw new NotSupportedException(
-            $"Plugin '{GetType().Name}' must implement a supported ConfigureServices overload.");
+            $"Plugin '{GetType().Name}' must implement ConfigureServices(IServiceCollection, AuthKitPluginContext).");
 
     /// <summary>
     /// Configures plugin services using the host application builder.
@@ -36,24 +34,19 @@ public partial interface IAuthKitPlugin
     /// <param name="configuration">The application configuration.</param>
     /// <remarks>
     /// This overload is optional. Its default implementation delegates to the
-    /// legacy service collection overload for existing plugins.
+    /// service collection overload with a context built from the plugin
+    /// identity and the scoped configuration section.
     /// </remarks>
     void ConfigureServices(
         IHostApplicationBuilder builder,
         IConfiguration configuration) =>
-        ConfigureServices(builder.Services, configuration);
-
-    /// <summary>
-    /// Configures plugin services with stable plugin context information.
-    /// </summary>
-    /// <param name="services">The service collection used by the host.</param>
-    /// <param name="context">The context for the plugin being configured.</param>
-    /// <remarks>
-    /// This overload is optional. Its default implementation delegates to the
-    /// legacy service collection overload for existing plugins.
-    /// </remarks>
-    void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) =>
-        ConfigureServices(services, context.Configuration);
+        ConfigureServices(
+            builder.Services,
+            new AuthKitPluginContext(
+                Id,
+                Name,
+                this.GetPluginConfiguration(configuration),
+                configuration));
 
     /// <summary>
     /// Binds strongly typed plugin options from the plugin configuration section using

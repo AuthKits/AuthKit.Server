@@ -80,6 +80,8 @@ The table below shows the architecture areas and their current scope.
 | [ADR-028](./028-plugin-contract-and-dynamic-loading-architecture.md) | Define The Plugin Contract And Dynamic Loading Architecture | Plugins | accepted | 2026-09-11 |
 | [ADR-029](./029-structured-plugin-health-contract.md) | Expose Structured And Cancellable Plugin Health Results | Plugins | accepted | 2026-09-13 |
 | [ADR-030](./030-plugin-middleware-pipeline.md) | Declare Plugin Middleware As A First-Class Transport-Explicit Pipeline | Plugins | accepted | 2026-09-24 |
+| [ADR-031](./031-plugin-discovery-manifest-gate.md) | Discover Plugins Through Manifests With A Pre-Load Compatibility Gate | Plugins | accepted | 2026-09-24 |
+| [ADR-032](./032-plugin-isolation-ordering.md) | Isolate Plugins In Per-Plugin Load Contexts With Deterministic Ordering | Plugins | accepted | 2026-09-29 |
 
 ## Relationships Between Areas
 

@@ -62,8 +62,9 @@ internal static class PluginConfigurationInvoker
             return builder.Services;
         }
 
-        plugin.ConfigureServices(services, configuration);
-        return services;
+        throw new InvalidOperationException(
+            $"Plugin '{plugin.Id}' implements no supported ConfigureServices overload. " +
+            "Implement ConfigureServices(IServiceCollection, AuthKitPluginContext).");
     }
 
     /// <summary>
