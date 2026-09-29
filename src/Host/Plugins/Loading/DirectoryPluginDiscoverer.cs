@@ -49,6 +49,7 @@ public sealed class DirectoryPluginDiscoverer(
 
             if (!PluginManifestReader.TryRead(pluginDir, out var manifest, out var error))
             {
+                logger.LogWarning("Discovered plugin at '{Location}' with unreadable manifest: {Error}", pluginDir, error);
                 yield return new DiscoveredPlugin
                 {
                     Manifest = null,
@@ -58,6 +59,9 @@ public sealed class DirectoryPluginDiscoverer(
                 continue;
             }
 
+            logger.LogInformation(
+                "Discovered plugin '{Id}' v{Version} at '{Location}'.",
+                manifest!.Id, manifest.Version, pluginDir);
             yield return new DiscoveredPlugin
             {
                 Manifest = manifest,

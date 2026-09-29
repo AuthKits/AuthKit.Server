@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Runtime.Loader;
 using AuthKit.Plugins.Abstractions.Contracts.Discovery;
 using ContractLoadedPlugin = AuthKit.Plugins.Abstractions.Contracts.Discovery.LoadedPlugin;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
@@ -7,15 +6,17 @@ using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAu
 namespace Host.Plugins.Loading;
 
 /// <summary>
-/// Default loader resolves each discovered location to an entry assembly,
-/// loads it, and constructs the plugin instance. Loads and constructs only
-/// no compatibility decisions, no validation, no activation.
+/// Default loader: resolves each discovered location to an entry assembly,
+/// loads it into an isolated <see cref="PluginLoadContext"/>, and constructs
+/// the plugin instance. Loads and constructs only — no compatibility decisions,
+/// no validation, no activation.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Plugins load into <see cref="AssemblyLoadContext.Default"/> so shared
-/// framework and package types resolve to the same runtime types on both sides
-/// of the plugin boundary. No hot unloading.
+/// Each plugin gets its own collectible load context. Host and framework
+/// assemblies already loaded by default stay shared; only plugin-private
+/// dependencies resolve from the plugin directory, so conflicting transitive
+/// versions cannot collide.
 /// </para>
 /// <para>
 /// Each plugin directory contributes at most one candidate: the entry assembly
@@ -79,14 +80,8 @@ public sealed class DefaultPluginLoader(ILogger logger) : IPluginLoader
 
         try
         {
-            var resolver = new AssemblyDependencyResolver(entryDllPath);
-            AssemblyLoadContext.Default.Resolving += (context, name) =>
-            {
-                var path = resolver.ResolveAssemblyToPath(name);
-                return path is not null ? context.LoadFromAssemblyPath(path) : null;
-            };
-
-            var assembly = AssemblyLoadContext.Default.LoadFromAssemblyPath(entryDllPath);
+            var context = new PluginLoadContext(entryDllPath);
+            var assembly = context.LoadEntry();
 
             var pluginType = assembly.GetTypes()
                 .FirstOrDefault(t => t is { IsPublic: true, IsAbstract: false }
@@ -108,6 +103,7 @@ public sealed class DefaultPluginLoader(ILogger logger) : IPluginLoader
                 Manifest = discovered.Manifest,
                 PluginType = pluginType,
                 Instance = plugin,
+                LoadContext = context,
             };
         }
         catch (Exception ex) when (ex is FileNotFoundException
