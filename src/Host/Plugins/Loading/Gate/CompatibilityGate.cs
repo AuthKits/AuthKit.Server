@@ -22,22 +22,49 @@ namespace Host.Plugins.Loading.Gate;
 internal static class CompatibilityGate
 {
     /// <summary>
-    /// Evaluates the manifest against the host version.
+    /// Evaluates the manifest against the host version and configuration.
     /// </summary>
     /// <param name="manifest">The discovered manifest.</param>
     /// <param name="hostVersion">The running host version. Null skips the version rule.</param>
+    /// <param name="hostConfiguration">Optional host configuration for the effective enabled flag.</param>
     /// <returns>The verdict with a human-readable reason for non-accepts.</returns>
     public static (GateVerdict Verdict, string? Reason) Check(
         PluginManifest manifest,
-        SemanticVersion? hostVersion)
+        SemanticVersion? hostVersion,
+        IConfiguration? hostConfiguration = null)
     {
-        if (!manifest.IsEnabled)
-            return (GateVerdict.SkipDisabled, $"Plugin '{manifest.Id}' is disabled (IsEnabled=false).");
+        if (!EffectiveIsEnabled(manifest, hostConfiguration))
+            return (GateVerdict.SkipDisabled, $"Plugin '{manifest.Id}' is disabled.");
 
         if (manifest.MinHostVersion is { } min && hostVersion is { } host && host < min)
             return (GateVerdict.Reject,
                 $"Host version {host} is lower than plugin '{manifest.Id}' required minimum {min}.");
 
         return (GateVerdict.Accept, null);
+    }
+
+    /// <summary>
+    /// Computes the effective enabled flag without mutating the manifest.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Truth table: manifest true + absent → true, true and true → true,
+    /// true and false → false, false and anything → false. The host may disable
+    /// but never re-enable a manifest-disabled plugin.
+    /// </para>
+    /// </remarks>
+    /// <param name="manifest">The discovered manifest.</param>
+    /// <param name="hostConfiguration">Optional host configuration (<c>Plugins:{id}:IsEnabled</c>).</param>
+    /// <returns>The effective flag the gate decides on.</returns>
+    public static bool EffectiveIsEnabled(PluginManifest manifest, IConfiguration? hostConfiguration)
+    {
+        if (!manifest.IsEnabled)
+            return false;
+
+        var configured = hostConfiguration?[$"Plugins:{manifest.Id}:IsEnabled"];
+        if (configured is null)
+            return true;
+
+        return !bool.TryParse(configured, out var parsed) || parsed;
     }
 }

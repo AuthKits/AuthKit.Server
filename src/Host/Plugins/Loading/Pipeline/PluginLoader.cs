@@ -1,6 +1,8 @@
 using AuthKit.Plugins.Abstractions.Contracts.Discovery;
 using AuthKit.Plugins.Abstractions.Models;
 using Host.Plugins.Loading.Results;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
 namespace Host.Plugins.Loading.Pipeline;
@@ -15,15 +17,15 @@ namespace Host.Plugins.Loading.Pipeline;
 /// plugin assemblies while their configuration is being built.
 /// </para>
 /// <para>
-/// The pipeline is discovery -> preload validation -> compatibility gate ->
-/// load -> contract validation -> consistency. Every plugin directory must carry
-/// manifest less directories that are invalid. Custom
-/// <see cref="IPluginDiscoverer"/> / <see cref="IPluginLoader"/> implementations
-/// can replace the defaults.
+/// The pipeline is discovery → pre-load validation → compatibility gate →
+/// dependency graph → load → contract validation → consistency. Every plugin
+/// directory must carry a manifest; manifest-less directories are invalid.
+/// Custom <see cref="IPluginDiscoverer"/> / <see cref="IPluginLoader"/>
+/// implementations can replace the defaults.
 /// </para>
 /// <para>
-/// This facade always returns the accepted plugins. Per candidate diagnostics
-/// go to the log programmatic access uses <see cref="PluginLoadingPipeline"/>
+/// This facade always returns the accepted plugins. Per-candidate diagnostics
+/// go to the log; programmatic access uses <see cref="PluginLoadingPipeline"/>
 /// with <see cref="PluginLoadResult"/> directly.
 /// </para>
 /// </remarks>
@@ -32,10 +34,11 @@ public static class PluginLoader
     /// <summary>
     /// Discovers and loads all valid AuthKit plugins from the specified root directory.
     /// </summary>
-    /// <param name="pluginsRootPath">The root directory containing one subdirectory per plugin. </param>
-    /// <param name="logger">The logger used to report plugin discovery, loading, and validation results. </param>
-    /// <param name="hostVersion">The version of the host application, used to reject plugins that
-    /// require a newer host.</param>
+    /// <param name="pluginsRootPath">The root directory containing one subdirectory per plugin.</param>
+    /// <param name="logger">The logger used to report plugin discovery, loading, and validation results.</param>
+    /// <param name="hostVersion">The version of the host application, used to reject plugins that require a newer host.</param>
+    /// <param name="hostConfiguration">Optional host configuration for the effective enabled flag.</param>
+    /// <param name="discoveryCache">Optional discovery cache. Null disables caching.</param>
     /// <returns>A readonly collection containing all successfully loaded plugins.</returns>
     /// <remarks>
     /// Each plugin directory is expected to contain an entry assembly whose file name
@@ -45,16 +48,19 @@ public static class PluginLoader
     public static IReadOnlyList<LoadedPlugin> LoadPlugins(
         string pluginsRootPath,
         ILogger logger,
-        SemanticVersion hostVersion) =>
-        LoadPlugins(pluginsRootPath, logger, hostVersion, discoverer: null, loader: null);
+        SemanticVersion hostVersion,
+        IConfiguration? hostConfiguration = null,
+        IPluginDiscoveryCache? discoveryCache = null) =>
+        LoadPlugins(pluginsRootPath, logger, hostVersion, hostConfiguration, discoveryCache, discoverer: null, loader: null);
 
     /// <summary>
     /// Discovers and loads plugins with swappable discovery/loading.
     /// </summary>
-    /// <param name="pluginsRootPath">Used only by the default discoverer ignored when <paramref name="discoverer"/> is supplied.</param>
-    /// <param name="logger">The logger used to report plugin discovery, loading, and validation results. </param>
-    /// <param name="hostVersion">The version of the host application, used to reject plugins that
-    /// require a newer host.</param>
+    /// <param name="pluginsRootPath">Used only by the default discoverer; ignored when <paramref name="discoverer"/> is supplied.</param>
+    /// <param name="logger">The logger used to report plugin discovery, loading, and validation results.</param>
+    /// <param name="hostVersion">The version of the host application, used to reject plugins that require a newer host.</param>
+    /// <param name="hostConfiguration">Optional host configuration for the effective enabled flag.</param>
+    /// <param name="discoveryCache">Optional discovery cache. Null disables caching.</param>
     /// <param name="discoverer">Custom discoverer. Defaults to directory discovery.</param>
     /// <param name="loader">Custom loader. Defaults to assembly loading.</param>
     /// <returns>A readonly collection containing all successfully loaded plugins.</returns>
@@ -62,13 +68,15 @@ public static class PluginLoader
         string pluginsRootPath,
         ILogger logger,
         SemanticVersion hostVersion,
+        IConfiguration? hostConfiguration,
+        IPluginDiscoveryCache? discoveryCache,
         IPluginDiscoverer? discoverer,
         IPluginLoader? loader)
     {
         discoverer ??= new DirectoryPluginDiscoverer(pluginsRootPath, logger);
         loader ??= new DefaultPluginLoader(logger);
 
-        var pipeline = new PluginLoadingPipeline(discoverer, loader, logger, hostVersion);
+        var pipeline = new PluginLoadingPipeline(discoverer, loader, logger, hostVersion, hostConfiguration, discoveryCache);
         var result = pipeline.RunAsync().GetAwaiter().GetResult();
 
         LogSummary(logger, result);

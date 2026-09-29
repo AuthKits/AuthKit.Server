@@ -5,6 +5,8 @@ using Host.Plugins.Contract;
 using Host.Plugins.Loading.Gate;
 using Host.Plugins.Loading.Manifest;
 using Host.Plugins.Loading.Results;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 
 namespace Host.Plugins.Loading.Pipeline;
 
@@ -27,11 +29,14 @@ namespace Host.Plugins.Loading.Pipeline;
 /// <param name="loader">The instance constructor. Never judges compatibility.</param>
 /// <param name="logger">The logger used to report stage outcomes.</param>
 /// <param name="hostVersion">The running host version for the compatibility gate. Null skips the version rule.</param>
+/// <param name="hostConfiguration">Optional host configuration for the effective enabled flag.</param>
 public sealed class PluginLoadingPipeline(
     IPluginDiscoverer discoverer,
     IPluginLoader loader,
     ILogger logger,
-    SemanticVersion? hostVersion)
+    SemanticVersion? hostVersion,
+    IConfiguration? hostConfiguration = null,
+    IPluginDiscoveryCache? discoveryCache = null)
 {
     /// <summary>
     /// Runs the full pipeline and returns accepted plugins with diagnostics.
@@ -39,18 +44,31 @@ public sealed class PluginLoadingPipeline(
     /// <param name="cancellationToken">Stops the pipeline between candidates.</param>
     /// <returns>Accepted plugins plus one issue per rejected candidate.</returns>
     /// <remarks>
-    /// Stage order per candidate: discovery error -> structural validation ->
-    /// duplicate ID -> compatibility gate -> load -> manifest consistency ->
-    /// contract validation. The first failing stage reports the issue later
-    /// stages never run for that candidate.
+    /// Stage order per candidate: discovery error → structural validation →
+    /// duplicate ID → compatibility gate → dependency graph → load in
+    /// topological order → manifest consistency → contract validation.
+    /// The first failing stage reports the issue; later stages never run for
+    /// that candidate. Dependents of failed plugins are rejected as
+    /// dependency-unavailable without loading.
     /// </remarks>
     public async Task<PluginLoadResult> RunAsync(CancellationToken cancellationToken = default)
     {
         var issues = new List<PluginLoadIssue>();
         var discovered = new List<DiscoveredPlugin>();
 
-        await foreach (var candidate in discoverer.DiscoverAsync(cancellationToken))
-            discovered.Add(candidate);
+        if (discoveryCache is not null
+            && await discoveryCache.TryGetAsync(cancellationToken) is { } cached)
+        {
+            discovered.AddRange(cached);
+        }
+        else
+        {
+            await foreach (var candidate in discoverer.DiscoverAsync(cancellationToken))
+                discovered.Add(candidate);
+
+            if (discoveryCache is not null)
+                await discoveryCache.StoreAsync(discovered, cancellationToken);
+        }
 
         // 1. Discovery errors are invalid and never load.
         var candidates = new List<DiscoveredPlugin>();
@@ -114,7 +132,7 @@ public sealed class PluginLoadingPipeline(
         {
             // Manifest presence was verified in step 2.
             var manifest = candidate.Manifest!;
-            var (verdict, reason) = CompatibilityGate.Check(manifest, hostVersion);
+            var (verdict, reason) = CompatibilityGate.Check(manifest, hostVersion, hostConfiguration);
             switch (verdict)
             {
                 case GateVerdict.Accept:
@@ -131,26 +149,92 @@ public sealed class PluginLoadingPipeline(
             }
         }
 
-        // 5. Load (construct only), one candidate at time so loader failures
-        // attribute exactly.
-        var accepted = new List<LoadedPlugin>();
-        foreach (var candidate in toLoad)
+        // 5. Dependency graph: unknown ids and cycles are startup errors.
+        var indexed = toLoad
+            .Select((candidate, index) => (Candidate: candidate, RegistrationOrder: index))
+            .ToList();
+        var knownIds = deduplicated
+            .Select(candidate => candidate.Manifest!.Id)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        DependencyGraph.Validate(indexed, knownIds);
+
+        // 6. Dependents of unavailable plugins (skipped, rejected, invalid) are
+        // rejected as dependency-unavailable without loading (fixpoint, so
+        // transitive dependents propagate regardless of discovery order).
+        var loadable = new List<(DiscoveredPlugin Candidate, int RegistrationOrder)>();
+        var unavailable = new HashSet<string>(
+            knownIds.Where(id => !indexed.Any(entry =>
+                string.Equals(entry.Candidate.Manifest!.Id, id, StringComparison.OrdinalIgnoreCase))),
+            StringComparer.OrdinalIgnoreCase);
+        var pending = new List<(DiscoveredPlugin Candidate, int RegistrationOrder)>(indexed);
+        bool progressed;
+        do
         {
+            progressed = false;
+            var remaining = new List<(DiscoveredPlugin Candidate, int RegistrationOrder)>();
+            foreach (var entry in pending)
+            {
+                // Manifest presence was verified in step 2.
+                var manifest = entry.Candidate.Manifest!;
+                var blockedBy = manifest.DependsOn
+                    .FirstOrDefault(dependency => unavailable.Contains(dependency));
+                if (blockedBy is null)
+                {
+                    remaining.Add(entry);
+                    continue;
+                }
+
+                var reason = $"Dependency '{blockedBy}' is unavailable; plugin '{manifest.Id}' cannot load.";
+                issues.Add(new PluginLoadIssue(entry.Candidate.Location, manifest.Id, PluginOutcome.Rejected, reason));
+                logger.LogError("Rejecting plugin '{Id}': {Reason}", manifest.Id, reason);
+                unavailable.Add(manifest.Id);
+                progressed = true;
+            }
+
+            pending = remaining;
+        }
+        while (progressed);
+
+        loadable.AddRange(pending);
+
+        // 7. Topological order: dependencies first, ties by priority then registration.
+        var ordered = DependencyGraph.Sort(loadable);
+
+        // 8. Load (construct only) in dependency order, one candidate at a time
+        // so loader failures attribute exactly. Dependents of failed plugins
+        // are rejected as dependency-unavailable without loading.
+        var accepted = new List<LoadedPlugin>();
+        var failedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var candidate in ordered)
+        {
+            // Manifest presence was verified in step 2.
+            var orderedManifest = candidate.Manifest!;
+            var missing = orderedManifest.DependsOn
+                .FirstOrDefault(dependency => failedIds.Contains(dependency));
+            if (missing is not null)
+            {
+                var reason = $"Dependency '{missing}' is unavailable; plugin '{orderedManifest.Id}' cannot load.";
+                issues.Add(new PluginLoadIssue(candidate.Location, orderedManifest.Id, PluginOutcome.Rejected, reason));
+                logger.LogError("Rejecting plugin '{Id}': {Reason}", orderedManifest.Id, reason);
+                failedIds.Add(orderedManifest.Id);
+                continue;
+            }
+
             var loaded = await loader.LoadAsync([candidate], cancellationToken);
             if (loaded.Count == 0)
             {
-                // Manifest presence was verified in step 2.
                 issues.Add(new PluginLoadIssue(
                     candidate.Location,
-                    candidate.Manifest!.Id,
+                    orderedManifest.Id,
                     PluginOutcome.Invalid,
                     "Loader failed to construct the plugin instance."));
+                failedIds.Add(orderedManifest.Id);
                 continue;
             }
 
             var contract = loaded[0];
 
-            // 6a. Manifest ↔ instance consistency.
+            // 8a. Manifest ↔ instance consistency.
             try
             {
                 PluginValidator.ValidateConsistency(contract.Manifest, contract.Instance);
@@ -160,10 +244,11 @@ public sealed class PluginLoadingPipeline(
                 var reason = $"Manifest/instance mismatch for plugin '{contract.Manifest.Id}': {ex.Message}";
                 issues.Add(new PluginLoadIssue(candidate.Location, contract.Manifest.Id, PluginOutcome.Invalid, reason));
                 logger.LogError("Rejecting plugin '{Id}': {Reason}", contract.Manifest.Id, reason);
+                failedIds.Add(orderedManifest.Id);
                 continue;
             }
 
-            // 6b. Full contract validation. Throws on violation.
+            // 8b. Full contract validation. Throws on violation.
             try
             {
                 PluginContractValidator.Validate(contract.Instance, logger);
@@ -173,6 +258,7 @@ public sealed class PluginLoadingPipeline(
                 var reason = $"Contract validation failed for plugin '{contract.Manifest.Id}': {ex.Message}";
                 issues.Add(new PluginLoadIssue(candidate.Location, contract.Manifest.Id, PluginOutcome.Invalid, reason));
                 logger.LogError("Rejecting plugin '{Id}': {Reason}", contract.Manifest.Id, reason);
+                failedIds.Add(orderedManifest.Id);
                 continue;
             }
 

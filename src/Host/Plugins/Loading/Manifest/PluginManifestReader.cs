@@ -31,8 +31,8 @@ internal static class PluginManifestReader
     /// Tries to read the manifest from <paramref name="pluginDirectory"/>.
     /// </summary>
     /// <param name="pluginDirectory">One plugin directory.</param>
-    /// <param name="manifest">The normalized manifest, or null on failure.</param>
-    /// <param name="error">The failure reason, or null on success.</param>
+    /// <param name="manifest">The normalized manifest or null on failure.</param>
+    /// <param name="error">The failure reason or null on success.</param>
     /// <returns>
     /// True with valid manifest. False with <paramref name="error"/> set when
     /// no manifest file exists or it cannot be parsed.
