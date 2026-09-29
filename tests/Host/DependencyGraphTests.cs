@@ -75,6 +75,20 @@ public sealed class DependencyGraphTests
     }
 
     [Fact]
+    public void ThreeCycle_ThrowsStartupError()
+    {
+        var indexed = Indexed(
+            Discovered(Manifest("test.a", 0, "test.b")),
+            Discovered(Manifest("test.b", 0, "test.c")),
+            Discovered(Manifest("test.c", 0, "test.a")));
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            DependencyGraph.Validate(indexed, new HashSet<string>(["test.a", "test.b", "test.c"], StringComparer.OrdinalIgnoreCase)));
+
+        Assert.Contains("cycle", exception.Message, StringComparison.OrdinalIgnoreCase);
+    }
+
+    [Fact]
     public void SelfCycle_ThrowsStartupError()
     {
         var indexed = Indexed(Discovered(Manifest("test.a", 0, "test.a")));

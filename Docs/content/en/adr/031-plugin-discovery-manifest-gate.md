@@ -1,4 +1,4 @@
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./030-plugin-middleware-pipeline.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./030-plugin-middleware-pipeline.md) | [Next](./032-plugin-isolation-ordering.md)
 
 # [ADR-031] Discover Plugins Through Manifests With A Pre-Load Compatibility Gate
 
@@ -44,7 +44,7 @@ Metadata lived only on the constructed `IAuthKitPlugin` instance, which forced t
 ## Consequences
 
 - Every plugin solution must ship its `manifest.json` (committed like Shield and Example, or generated at build like DevTokens and DevTools via `AuthKit.ManifestGenerator`, which the Dockerfile runs after publish) — without it the plugin is rejected at startup.
-- Every plugin solution should commit or generate its `manifest.json` (Shield and Example do; DevTokens/DevTools generate theirs at build) — otherwise the gate cannot see it.
+- Graph problems split by severity: structural issues (self/duplicate/invalid dependency entries, duplicate Ids) reject only the offending plugin as `Invalid`; hard startup failure is reserved for unorderable graphs (unknown dependency, cycle).
 - `SemanticVersion` (SemVer 2.0.0, build metadata ignored for precedence) is the only version comparison; `System.Version` must never be used.
 - Future gate rules (capabilities, platform, max version) plug into `CompatibilityGate` without touching discovery or loading.
 
@@ -54,4 +54,4 @@ Metadata lived only on the constructed `IAuthKitPlugin` instance, which forced t
 - [ADR-010](./010-plugin-loading-from-directory.md) - plugin loading and legacy middleware slot
 - [ADR-028](./028-plugin-contract-and-dynamic-loading-architecture.md) - plugin contract and dynamic loading architecture
 
-[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./030-plugin-middleware-pipeline.md) | [Next]()
+[ADR Home](../../README.md) | [Category Index](./README.md) | [Previous](./030-plugin-middleware-pipeline.md) | [Next](./032-plugin-isolation-ordering.md)

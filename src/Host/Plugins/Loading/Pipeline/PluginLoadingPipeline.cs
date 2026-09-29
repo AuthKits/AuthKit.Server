@@ -5,14 +5,12 @@ using Host.Plugins.Contract;
 using Host.Plugins.Loading.Gate;
 using Host.Plugins.Loading.Manifest;
 using Host.Plugins.Loading.Results;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 
 namespace Host.Plugins.Loading.Pipeline;
 
 /// <summary>
-/// Host loading pipeline: discovery -> preload validation -> compatibility gate
-/// -> isolated load -> contract validation -> manifest consistency -> accepted set.
+/// Host loading pipeline: discovery preload validation compatibility gate
+/// dependency graph isolated load contract validation manifest consistency.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,8 +19,9 @@ namespace Host.Plugins.Loading.Pipeline;
 /// stay the same.
 /// </para>
 /// <para>
-/// Loading is per candidate rather than batched, so a loader failure attributes
-/// to exactly one location in the resulting <see cref="PluginLoadResult"/>.
+/// Loading is one batch call with the sorted, accepted list; results attribute
+/// by manifest ID, so a loader failure maps to exactly one location in the
+/// resulting <see cref="PluginLoadResult"/>.
 /// </para>
 /// </remarks>
 /// <param name="discoverer">The candidate source. Never activated by the pipeline.</param>
@@ -200,39 +199,40 @@ public sealed class PluginLoadingPipeline(
         // 7. Topological order: dependencies first, ties by priority then registration.
         var ordered = DependencyGraph.Sort(loadable);
 
-        // 8. Load (construct only) in dependency order, one candidate at a time
-        // so loader failures attribute exactly. Dependents of failed plugins
-        // are rejected as dependency-unavailable without loading.
+        // 8. Load the sorted, accepted list in one batch (construct only).
+        // Results attribute by manifest Id, unique since step 3. Missing ids
+        // are loader failures; dependents of failed plugins are rejected as
+        // dependency-unavailable without loading.
+        var loadedById = (await loader.LoadAsync(ordered, cancellationToken))
+            .Where(contract => contract.Manifest is not null)
+            .GroupBy(contract => contract.Manifest.Id, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.First(), StringComparer.OrdinalIgnoreCase);
         var accepted = new List<LoadedPlugin>();
         var failedIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         foreach (var candidate in ordered)
         {
-            // Manifest presence was verified in step 2.
-            var orderedManifest = candidate.Manifest!;
-            var missing = orderedManifest.DependsOn
+            var manifest = candidate.Manifest!;
+            var missing = manifest.DependsOn
                 .FirstOrDefault(dependency => failedIds.Contains(dependency));
             if (missing is not null)
             {
-                var reason = $"Dependency '{missing}' is unavailable; plugin '{orderedManifest.Id}' cannot load.";
-                issues.Add(new PluginLoadIssue(candidate.Location, orderedManifest.Id, PluginOutcome.Rejected, reason));
-                logger.LogError("Rejecting plugin '{Id}': {Reason}", orderedManifest.Id, reason);
-                failedIds.Add(orderedManifest.Id);
+                var reason = $"Dependency '{missing}' is unavailable; plugin '{manifest.Id}' cannot load.";
+                issues.Add(new PluginLoadIssue(candidate.Location, manifest.Id, PluginOutcome.Rejected, reason));
+                logger.LogError("Rejecting plugin '{Id}': {Reason}", manifest.Id, reason);
+                failedIds.Add(manifest.Id);
                 continue;
             }
 
-            var loaded = await loader.LoadAsync([candidate], cancellationToken);
-            if (loaded.Count == 0)
+            if (!loadedById.TryGetValue(manifest.Id, out var contract))
             {
                 issues.Add(new PluginLoadIssue(
                     candidate.Location,
-                    orderedManifest.Id,
+                    manifest.Id,
                     PluginOutcome.Invalid,
                     "Loader failed to construct the plugin instance."));
-                failedIds.Add(orderedManifest.Id);
+                failedIds.Add(manifest.Id);
                 continue;
             }
-
-            var contract = loaded[0];
 
             // 8a. Manifest ↔ instance consistency.
             try
@@ -244,7 +244,7 @@ public sealed class PluginLoadingPipeline(
                 var reason = $"Manifest/instance mismatch for plugin '{contract.Manifest.Id}': {ex.Message}";
                 issues.Add(new PluginLoadIssue(candidate.Location, contract.Manifest.Id, PluginOutcome.Invalid, reason));
                 logger.LogError("Rejecting plugin '{Id}': {Reason}", contract.Manifest.Id, reason);
-                failedIds.Add(orderedManifest.Id);
+                failedIds.Add(manifest.Id);
                 continue;
             }
 
@@ -258,7 +258,7 @@ public sealed class PluginLoadingPipeline(
                 var reason = $"Contract validation failed for plugin '{contract.Manifest.Id}': {ex.Message}";
                 issues.Add(new PluginLoadIssue(candidate.Location, contract.Manifest.Id, PluginOutcome.Invalid, reason));
                 logger.LogError("Rejecting plugin '{Id}': {Reason}", contract.Manifest.Id, reason);
-                failedIds.Add(orderedManifest.Id);
+                failedIds.Add(manifest.Id);
                 continue;
             }
 

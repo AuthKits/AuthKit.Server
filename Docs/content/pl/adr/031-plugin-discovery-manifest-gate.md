@@ -1,4 +1,4 @@
-[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/030-plugin-middleware-pipeline/) | [Następny]()
+[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/030-plugin-middleware-pipeline/) | [Następny](/pl/adr/032-plugin-isolation-ordering/)
 
 # [ADR-031] Odkrywanie Pluginów Przez Manifesty Z Bramką Kompatybilności Przed Ładowaniem
 
@@ -44,7 +44,7 @@ Metadane żyły tylko na skonstruowanej instancji `IAuthKitPlugin`, co zmuszało
 ## Consequences
 
 - Każde rozwiązanie pluginu musi dostarczać swój `manifest.json` (commitowany jak Shield i Example albo generowany przy buildzie jak DevTokens i DevTools przez `AuthKit.ManifestGenerator`, który Dockerfile odpala po publikacji) — bez niego plugin odpada na starcie.
-- Każde rozwiązanie pluginu powinno commitować lub generować swój `manifest.json` (Shield i Example mają; DevTokens/DevTools generują przy buildzie) — inaczej bramka go nie widzi.
+- Problemy grafu dzielą się po wadze: strukturalne (self/duplikaty/złe wpisy zależności, duplikaty Id) odrzucają tylko winny plugin jako `Invalid`; twardy błąd startu rezerwujemy dla grafów nieuporządkowalnych (nieznana zależność, cykl).
 - `SemanticVersion` (SemVer 2.0.0, build metadata ignorowane w precedencji) to jedyne porównywanie wersji; `System.Version` nigdy.
 - Przyszłe reguły bramki (capabilities, platforma, max version) wpina się w `CompatibilityGate` bez ruszania discovery ani ładowania.
 
@@ -54,4 +54,4 @@ Metadane żyły tylko na skonstruowanej instancji `IAuthKitPlugin`, co zmuszało
 - [ADR-010](/pl/adr/010-plugin-loading-from-directory/) - ładowanie pluginów i legacy slot middleware
 - [ADR-028](/pl/adr/028-plugin-contract-and-dynamic-loading-architecture/) - kontrakt pluginu i architektura dynamicznego ładowania
 
-[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/030-plugin-middleware-pipeline/) | [Następny]()
+[/pl/](/pl/) | [Indeks kategorii](/pl/adr/) | [Poprzedni](/pl/adr/030-plugin-middleware-pipeline/) | [Następny](/pl/adr/032-plugin-isolation-ordering/)

@@ -10,6 +10,11 @@ namespace AuthKit.Plugins.Abstractions.Contracts.Discovery;
 /// instances, and returns them for the host pipeline (validation, consistency,
 /// ordering, activation).
 /// </remarks>
+/// <remarks>
+/// Echo each candidate's manifest back on the returned entry. The pipeline
+/// attributes results by manifest Id, so entries without a manifest cannot
+/// be attributed and are ignored.
+/// </remarks>
 public interface IPluginLoader
 {
     /// <summary>
