@@ -123,6 +123,23 @@ public sealed class PluginDiscoveryTests : IDisposable
         Assert.Equal(0, count);
     }
 
+    [Fact]
+    public void ManifestReader_NullCollections_NormalizedToEmpty()
+    {
+        var root = NewRoot();
+        var dir = Directory.CreateDirectory(Path.Combine(root, "nulls")).FullName;
+        File.WriteAllText(Path.Combine(dir, "manifest.json"),
+            """{"Id":"test.nulls","Name":"Nulls","Version":"1.0.0","Tags":null,"Capabilities":null,"DependsOn":null}""");
+
+        var success = PluginManifestReader.TryRead(dir, out var manifest, out var error);
+
+        Assert.True(success, error);
+        Assert.NotNull(manifest);
+        Assert.Empty(manifest.Tags);
+        Assert.Empty(manifest.Capabilities);
+        Assert.Empty(manifest.DependsOn);
+    }
+
     // ---------- ManifestValidator ----------
 
     [Fact]

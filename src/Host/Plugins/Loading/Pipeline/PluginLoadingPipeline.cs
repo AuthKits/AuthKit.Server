@@ -152,7 +152,8 @@ public sealed class PluginLoadingPipeline(
         var indexed = toLoad
             .Select((candidate, index) => (Candidate: candidate, RegistrationOrder: index))
             .ToList();
-        var knownIds = deduplicated
+        var knownIds = discovered
+            .Where(candidate => !string.IsNullOrWhiteSpace(candidate.Manifest?.Id))
             .Select(candidate => candidate.Manifest!.Id)
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
         DependencyGraph.Validate(indexed, knownIds);

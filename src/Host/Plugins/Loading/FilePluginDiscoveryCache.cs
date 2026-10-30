@@ -22,7 +22,10 @@ namespace Host.Plugins.Loading;
 /// </remarks>
 /// <param name="cacheFilePath">Where the cache file lives.</param>
 /// <param name="logger">The logger used to report cache hits, misses, and failures.</param>
-public sealed class FilePluginDiscoveryCache(string cacheFilePath, ILogger logger) : IPluginDiscoveryCache
+public sealed class FilePluginDiscoveryCache(
+    string cacheFilePath,
+    ILogger logger,
+    string? pluginsRootPath = null) : IPluginDiscoveryCache
 {
     private const int SchemaVersion = 1;
 
@@ -49,12 +52,37 @@ public sealed class FilePluginDiscoveryCache(string cacheFilePath, ILogger logge
             if (stored is null || stored.FormatVersion != SchemaVersion)
                 return Miss();
 
+            if (pluginsRootPath is not null)
+            {
+                var currentRootFingerprint = ComputeRootFingerprint(pluginsRootPath);
+                if (!string.Equals(stored.RootFingerprint, currentRootFingerprint, StringComparison.Ordinal))
+                {
+                    logger.LogInformation("Discovery cache stale: plugin directory structure changed for '{Root}'; full rediscovery.", pluginsRootPath);
+                    return Miss();
+                }
+            }
+
+            var fullRoot = pluginsRootPath is not null
+                ? Path.GetFullPath(pluginsRootPath).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                : null;
+
             var entries = new List<DiscoveredPlugin>();
             foreach (var entry in stored.Entries)
             {
                 cancellationToken.ThrowIfCancellationRequested();
 
-                if (Fingerprint(entry.Location) != entry.SourceFingerprint)
+                if (fullRoot is not null)
+                {
+                    var fullLocation = Path.GetFullPath(entry.Location).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+                    if (!fullLocation.StartsWith(fullRoot + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) &&
+                        !fullLocation.Equals(fullRoot, StringComparison.OrdinalIgnoreCase))
+                    {
+                        logger.LogWarning("Discovery cache contains plugin location '{Location}' outside configured root '{Root}'; full rediscovery.", entry.Location, pluginsRootPath);
+                        return Miss();
+                    }
+                }
+
+                if (!Directory.Exists(entry.Location) || Fingerprint(entry.Location) != entry.SourceFingerprint)
                 {
                     logger.LogInformation("Discovery cache stale for '{Location}'; full rediscovery.", entry.Location);
                     return Miss();
@@ -91,8 +119,10 @@ public sealed class FilePluginDiscoveryCache(string cacheFilePath, ILogger logge
             if (directory is not null)
                 Directory.CreateDirectory(directory);
 
+            var rootFingerprint = pluginsRootPath is not null ? ComputeRootFingerprint(pluginsRootPath) : null;
             var file = new CacheFile(
                 SchemaVersion,
+                rootFingerprint,
                 plugins.Select(candidate => new CacheEntry(
                     candidate.Location,
                     Fingerprint(candidate.Location),
@@ -109,6 +139,19 @@ public sealed class FilePluginDiscoveryCache(string cacheFilePath, ILogger logge
         }
 
         return Task.CompletedTask;
+    }
+
+    private static string ComputeRootFingerprint(string? rootPath)
+    {
+        if (string.IsNullOrEmpty(rootPath) || !Directory.Exists(rootPath))
+            return string.Empty;
+
+        var subdirs = Directory.GetDirectories(rootPath)
+            .Select(Path.GetFileName)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Order(StringComparer.Ordinal);
+
+        return string.Join(";", subdirs);
     }
 
     private static string Fingerprint(string location)
@@ -146,15 +189,20 @@ public sealed class FilePluginDiscoveryCache(string cacheFilePath, ILogger logge
     private static PluginManifest Normalize(PluginManifest manifest) =>
         manifest with
         {
-            Capabilities = new HashSet<string>(manifest.Capabilities, StringComparer.OrdinalIgnoreCase),
-            Tags = manifest.Tags.ToArray(),
-            DependsOn = manifest.DependsOn.ToArray(),
+            Capabilities = manifest.Capabilities is not null
+                ? new HashSet<string>(manifest.Capabilities, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            Tags = manifest.Tags is not null ? manifest.Tags.ToArray() : [],
+            DependsOn = manifest.DependsOn is not null ? manifest.DependsOn.ToArray() : [],
         };
 
     private static Task<IReadOnlyList<DiscoveredPlugin>?> Miss() =>
         Task.FromResult<IReadOnlyList<DiscoveredPlugin>?>(null);
 
-    private sealed record CacheFile(int FormatVersion, List<CacheEntry> Entries);
+    private sealed record CacheFile(
+        int FormatVersion,
+        string? RootFingerprint,
+        List<CacheEntry> Entries);
 
     private sealed record CacheEntry(
         string Location,

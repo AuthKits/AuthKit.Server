@@ -65,6 +65,6 @@ internal static class CompatibilityGate
         if (configured is null)
             return true;
 
-        return !bool.TryParse(configured, out var parsed) || parsed;
+        return bool.TryParse(configured, out var parsed) && parsed;
     }
 }

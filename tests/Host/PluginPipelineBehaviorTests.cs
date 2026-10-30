@@ -187,6 +187,42 @@ public sealed class PluginPipelineBehaviorTests : IDisposable
         await Assert.ThrowsAsync<InvalidOperationException>(() => pipeline.RunAsync());
     }
 
+    [Fact]
+    public async Task Pipeline_DependencyCaseInsensitive_OrdersCorrectly()
+    {
+        var loadedOrder = new List<string>();
+        var pipeline = Pipeline(
+        [
+            Discovered(Manifest("test.b", dependsOn: ["Test.A"])),
+            Discovered(Manifest("test.a")),
+        ],
+        loadedOrder);
+
+        var result = await pipeline.RunAsync();
+
+        Assert.Equal(["test.a", "test.b"], loadedOrder);
+        Assert.Equal(2, result.Loaded.Count);
+        Assert.Empty(result.Issues);
+    }
+
+    [Fact]
+    public async Task Pipeline_DependentOnStructurallyInvalidManifest_RejectsDependentWithoutStartupCrash()
+    {
+        var loadedOrder = new List<string>();
+        var pipeline = Pipeline(
+        [
+            Discovered(new PluginManifest { Id = "test.invalid", Name = "Invalid", Tags = ["   "] }),
+            Discovered(Manifest("test.b", dependsOn: ["test.invalid"])),
+        ],
+        loadedOrder);
+
+        var result = await pipeline.RunAsync();
+
+        Assert.Empty(loadedOrder);
+        Assert.Contains(result.Issues, i => i.PluginId == "test.invalid" && i.Outcome == PluginOutcome.Invalid);
+        Assert.Contains(result.Issues, i => i.PluginId == "test.b" && i.Outcome == PluginOutcome.Rejected && i.Reason.Contains("unavailable"));
+    }
+
     // ---------- G8: EffectiveIsEnabled ----------
 
     [Theory]
@@ -195,6 +231,9 @@ public sealed class PluginPipelineBehaviorTests : IDisposable
     [InlineData(true, "false", false)]
     [InlineData(false, null, false)]
     [InlineData(false, "true", false)]
+    [InlineData(true, "0", false)]
+    [InlineData(true, "off", false)]
+    [InlineData(true, "invalid", false)]
     public void EffectiveIsEnabled_TruthTable(bool manifest, string? configured, bool expected)
     {
         var config = configured is null
@@ -340,6 +379,59 @@ public sealed class PluginPipelineBehaviorTests : IDisposable
         Assert.Contains("test.a", json, StringComparison.Ordinal);
         Assert.DoesNotContain("AssemblyLoadContext", json, StringComparison.Ordinal);
         Assert.DoesNotContain("PluginType", json, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task Cache_NewDirectoryInRoot_TriggersMiss()
+    {
+        var root = NewRoot();
+        WriteManifest(Directory.CreateDirectory(Path.Combine(root, "a")).FullName, "test.a");
+        var cachePath = Path.Combine(root, "cache.json");
+        var calls = 0;
+
+        // Run 1: caches plugin "a"
+        {
+            var counting = new CountingDiscoverer(new DirectoryPluginDiscoverer(root, NullLogger.Instance), () => calls++);
+            var cache = new FilePluginDiscoveryCache(cachePath, NullLogger.Instance, root);
+            var pipeline = new PluginLoadingPipeline(counting, new RecordingLoader([]), NullLogger.Instance, SemanticVersion.Parse("1.0.0"), null, cache);
+            var first = await pipeline.RunAsync();
+            Assert.Single(first.Loaded);
+            Assert.Equal(1, calls);
+        }
+
+        // Add a new plugin "b"
+        WriteManifest(Directory.CreateDirectory(Path.Combine(root, "b")).FullName, "test.b");
+
+        // Run 2: cache detects new directory in root and returns miss for full rediscovery
+        {
+            var counting = new CountingDiscoverer(new DirectoryPluginDiscoverer(root, NullLogger.Instance), () => calls++);
+            var cache = new FilePluginDiscoveryCache(cachePath, NullLogger.Instance, root);
+            var pipeline = new PluginLoadingPipeline(counting, new RecordingLoader([]), NullLogger.Instance, SemanticVersion.Parse("1.0.0"), null, cache);
+            var second = await pipeline.RunAsync();
+            Assert.Equal(2, second.Loaded.Count);
+            Assert.Equal(2, calls);
+        }
+    }
+
+    [Fact]
+    public async Task Cache_LocationOutsideRoot_IsMiss()
+    {
+        var root = NewRoot();
+        var outsideRoot = NewRoot();
+        var cachePath = Path.Combine(root, "cache.json");
+        var cache = new FilePluginDiscoveryCache(cachePath, NullLogger.Instance, root);
+
+        var candidate = new DiscoveredPlugin
+        {
+            Location = Path.Combine(outsideRoot, "evil"),
+            Manifest = Manifest("test.evil"),
+        };
+
+        // Cache stores an entry whose Location is outside root
+        await cache.StoreAsync([candidate]);
+
+        // TryGetAsync rejects it because Location is outside root
+        Assert.Null(await cache.TryGetAsync());
     }
 
     // ---------- G10: logging ----------

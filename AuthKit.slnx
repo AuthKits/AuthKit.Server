@@ -18,6 +18,8 @@
   </Folder>
   <Folder Name="/Tools/">
     <Project Path="tools/AuthKit.PluginContractValidator/AuthKit.PluginContractValidator.csproj" />
+    <Project Path="tools/AuthKit.ManifestGenerator/Core/AuthKit.ManifestGenerator.Core.csproj" />
+    <Project Path="tools/AuthKit.ManifestGenerator/CLI/AuthKit.ManifestGenerator.CLI.csproj" />
   </Folder>     
   <Project Path="src/Core/Core.csproj" />
   <Project Path="src/Host/Host.csproj" />

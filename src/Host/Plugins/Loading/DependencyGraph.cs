@@ -83,7 +83,7 @@ internal static class DependencyGraph
 
             foreach (var node in nodes)
             {
-                if (!node.DependsOn.Contains(id))
+                if (!node.DependsOn.Contains(id, StringComparer.OrdinalIgnoreCase))
                     continue;
 
                 pending[node.Id]--;
@@ -91,6 +91,9 @@ internal static class DependencyGraph
                     InsertReady(ready, byId, node);
             }
         }
+
+        if (order.Count != nodes.Count)
+            throw new InvalidOperationException("Dependency graph topological sort did not emit all nodes.");
 
         return order;
     }

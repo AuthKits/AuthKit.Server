@@ -28,8 +28,8 @@ var hostVersion = SemanticVersion.Parse(Assembly.GetEntryAssembly()!
         .GetCustomAttribute<AssemblyInformationalVersionAttribute>()!
         .InformationalVersion!.Split('+')[0]);
 var discoveryCachePath = builder.Configuration["AuthKit:DiscoveryCachePath"]
-    ?? Path.Combine(Path.GetTempPath(), "authkit-discovery-cache.json");
-var discoveryCache = new FilePluginDiscoveryCache(discoveryCachePath, pluginLogger);
+    ?? Path.Combine(AppContext.BaseDirectory, "authkit-discovery-cache.json");
+var discoveryCache = new FilePluginDiscoveryCache(discoveryCachePath, pluginLogger, pluginsPath);
 
 var plugins = PluginLoader.LoadPlugins(pluginsPath, pluginLogger, hostVersion, builder.Configuration, discoveryCache);
 

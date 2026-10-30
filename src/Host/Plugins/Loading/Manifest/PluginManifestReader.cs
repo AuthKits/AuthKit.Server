@@ -74,8 +74,10 @@ internal static class PluginManifestReader
     private static PluginManifest Normalize(PluginManifest manifest) =>
         manifest with
         {
-            Capabilities = new HashSet<string>(manifest.Capabilities, StringComparer.OrdinalIgnoreCase),
-            Tags = [.. manifest.Tags],
-            DependsOn = [.. manifest.DependsOn],
+            Capabilities = manifest.Capabilities is not null
+                ? new HashSet<string>(manifest.Capabilities, StringComparer.OrdinalIgnoreCase)
+                : new HashSet<string>(StringComparer.OrdinalIgnoreCase),
+            Tags = manifest.Tags is not null ? [.. manifest.Tags] : [],
+            DependsOn = manifest.DependsOn is not null ? [.. manifest.DependsOn] : [],
         };
 }
