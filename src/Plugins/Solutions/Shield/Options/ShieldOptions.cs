@@ -11,7 +11,7 @@ public sealed class ShieldOptions
 {
     /// <summary>
     /// Maximum requests per client inside <see cref="WindowSeconds"/> before
-    /// the client trips the lockdown. Default 100.
+    /// the client is temporarily blocked. Default 100.
     /// </summary>
     [Range(1, 1_000_000)]
     public int MaxRequestsPerWindow { get; set; } = 100;
@@ -23,13 +23,13 @@ public sealed class ShieldOptions
     public int WindowSeconds { get; set; } = 60;
 
     /// <summary>
-    /// How long an automatic lockdown lasts once tripped. Default 300s.
+    /// Duration of client blocks and automatic global lockdown. Default 300s.
     /// </summary>
     [Range(1, 86_400)]
     public int LockdownSeconds { get; set; } = 300;
 
     /// <summary>
-    /// Signature hits from a single client before it trips the lockdown. Default 3.
+    /// Signature hits from a single client before a temporary block. Default 3.
     /// </summary>
     [Range(1, 100)]
     public int MaxSignatureHits { get; set; } = 3;
@@ -42,6 +42,10 @@ public sealed class ShieldOptions
     [Range(1, 1_000_000)]
     public int MaxTrackedClients { get; set; } = 10_000;
 
+    /// <summary>Distinct blocked clients required for an automatic global lockdown.</summary>
+    [Range(2, 1_000_000)]
+    public int MinOffendingClientsForLockdown { get; set; } = 20;
+
     /// <summary>
     /// Enables path/query attack-signature detection. Default true.
     /// </summary>
@@ -49,7 +53,7 @@ public sealed class ShieldOptions
 
     /// <summary>
     /// Failed authentications (401/403) per client inside
-    /// <see cref="AuthFailureWindowSeconds"/> before lockdown. Default 10.
+    /// <see cref="AuthFailureWindowSeconds"/> before a client block. Default 10.
     /// </summary>
     [Range(1, 10_000)]
     public int MaxAuthFailures { get; set; } = 10;
@@ -73,7 +77,7 @@ public sealed class ShieldOptions
 
     /// <summary>
     /// Missing paths per client inside <see cref="ScannerWindowSeconds"/>
-    /// before lockdown. Default 20.
+    /// before a client block. Default 20.
     /// </summary>
     [Range(1, 10_000)]
     public int MaxNotFoundProbes { get; set; } = 20;
@@ -136,11 +140,15 @@ public sealed class ShieldOptions
     public string[] BlockedIps { get; set; } = [];
 
     /// <summary>
-    /// Trust the leftmost <c>X-Forwarded-For</c> entry for client identification.
-    /// Enable only behind a trusted reverse proxy; clients can spoof this
-    /// header otherwise. Default false.
+    /// Use <c>X-Forwarded-For</c> for client identification. Select the entry
+    /// <see cref="TrustedProxyHops"/> positions from the right. Enable only
+    /// when direct access to the host is blocked by trusted proxies.
     /// </summary>
     public bool TrustForwardedHeader { get; set; } = false;
+
+    /// <summary>Number of trusted proxies that append to X-Forwarded-For.</summary>
+    [Range(1, 16)]
+    public int TrustedProxyHops { get; set; } = 1;
 
     /// <summary>
     /// Maximum retained incidents in the in-memory ring buffer. Default 100.

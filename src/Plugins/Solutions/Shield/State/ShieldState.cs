@@ -22,6 +22,9 @@ public sealed class ShieldState : IShieldState
     private readonly LockdownGate _lockdown = new();
     private readonly IncidentLog _incidents = new();
     private readonly ShieldMetrics _metrics = new();
+    private readonly Lock _clientSync = new();
+    private readonly Dictionary<string, ClientBlock> _blockedClients = new(StringComparer.Ordinal);
+    private readonly LinkedList<string> _blockedOrder = new();
 
     /// <summary>
     /// <summary>
@@ -42,6 +45,55 @@ public sealed class ShieldState : IShieldState
         _metrics.CountTrip();
         RecordIncident(sensor, reason, "lockdown-entered", maxIncidents);
         return true;
+    }
+
+    public bool IsClientBlocked(string clientId, out DateTimeOffset blockedUntil, out string? reason)
+    {
+        lock (_clientSync)
+        {
+            PruneBlockedClients(DateTimeOffset.UtcNow);
+            if (_blockedClients.TryGetValue(clientId, out var block))
+            {
+                blockedUntil = block.Until;
+                reason = block.Reason;
+                return true;
+            }
+        }
+
+        blockedUntil = default;
+        reason = null;
+        return false;
+    }
+
+    public void RecordOffender(string clientId, string sensor, string reason, TimeSpan duration,
+        int maxTrackedClients, int minOffendingClientsForLockdown, int maxIncidents)
+    {
+        bool globalThresholdReached;
+        lock (_clientSync)
+        {
+            var now = DateTimeOffset.UtcNow;
+            PruneBlockedClients(now);
+            if (_blockedClients.TryGetValue(clientId, out var existing))
+            {
+                _blockedOrder.Remove(existing.Node);
+                _blockedOrder.AddLast(existing.Node);
+                existing.Until = now.Add(duration);
+                existing.Reason = reason;
+            }
+            else
+            {
+                while (_blockedClients.Count >= maxTrackedClients)
+                    RemoveBlockedClient(_blockedOrder.First!.Value);
+
+                _blockedClients.Add(clientId, new ClientBlock(now.Add(duration), reason, _blockedOrder.AddLast(clientId)));
+            }
+
+            globalThresholdReached = _blockedClients.Count >= minOffendingClientsForLockdown;
+        }
+
+        RecordIncident(sensor, reason, "client-blocked", maxIncidents);
+        if (globalThresholdReached)
+            TryEnterLockdown("distributed-attack", "multiple distinct offending clients", duration, maxIncidents);
     }
 
     /// <summary>
@@ -159,5 +211,25 @@ public sealed class ShieldState : IShieldState
     {
         lock (_eventsSync)
             return _events.TryGetValue(bucket, out var counter) ? counter.ClientCount : 0;
+    }
+
+    private void PruneBlockedClients(DateTimeOffset now)
+    {
+        while (_blockedOrder.First is { } first && _blockedClients[first.Value].Until <= now)
+            RemoveBlockedClient(first.Value);
+    }
+
+    private void RemoveBlockedClient(string clientId)
+    {
+        var block = _blockedClients[clientId];
+        _blockedOrder.Remove(block.Node);
+        _blockedClients.Remove(clientId);
+    }
+
+    private sealed class ClientBlock(DateTimeOffset until, string reason, LinkedListNode<string> node)
+    {
+        public DateTimeOffset Until { get; set; } = until;
+        public string Reason { get; set; } = reason;
+        public LinkedListNode<string> Node { get; } = node;
     }
 }

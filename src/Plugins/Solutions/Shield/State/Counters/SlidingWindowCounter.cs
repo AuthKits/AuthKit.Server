@@ -1,13 +1,13 @@
 namespace Shield.State.Counters;
 
-/// <summary>
-/// Per-client sliding-window event counter (request rate, auth failures).
-/// Thread-safe.
-/// </summary>
+/// <summary>Bounded per-client sliding-window counter with LRU eviction.</summary>
 internal sealed class SlidingWindowCounter
 {
+    private const int PruneInterval = 1024;
     private readonly Lock _sync = new();
-    private readonly Dictionary<string, Queue<DateTimeOffset>> _buckets = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, ClientBucket> _buckets = new(StringComparer.Ordinal);
+    private readonly LinkedList<string> _recency = new();
+    private int _recordsSincePrune;
 
     /// <summary>
     /// Records an event and returns the client's count inside the window.
@@ -17,33 +17,30 @@ internal sealed class SlidingWindowCounter
         lock (_sync)
         {
             var cutoff = now.AddSeconds(-windowSeconds);
-            if (!_buckets.ContainsKey(clientId) && _buckets.Count >= maxTrackedClients)
+            if (++_recordsSincePrune >= PruneInterval)
             {
-                foreach (var (id, events) in _buckets.ToArray())
-                {
-                    while (events.Count > 0 && events.Peek() < cutoff)
-                        events.Dequeue();
-                    if (events.Count == 0)
-                        _buckets.Remove(id);
-                }
+                _recordsSincePrune = 0;
+                PruneExpired(cutoff);
+            }
 
+            if (!_buckets.TryGetValue(clientId, out var bucket))
+            {
                 while (_buckets.Count >= maxTrackedClients)
-                {
-                    var oldest = _buckets.MinBy(entry => entry.Value.Peek().UtcTicks).Key;
-                    _buckets.Remove(oldest);
-                }
-            }
+                    Remove(_recency.First!.Value);
 
-            if (!_buckets.TryGetValue(clientId, out var timestamps))
+                bucket = new ClientBucket(_recency.AddLast(clientId));
+                _buckets.Add(clientId, bucket);
+            }
+            else
             {
-                timestamps = new Queue<DateTimeOffset>();
-                _buckets[clientId] = timestamps;
+                _recency.Remove(bucket.RecencyNode);
+                _recency.AddLast(bucket.RecencyNode);
             }
 
-            while (timestamps.Count > 0 && timestamps.Peek() < cutoff)
-                timestamps.Dequeue();
-            timestamps.Enqueue(now);
-            return timestamps.Count;
+            while (bucket.Timestamps.Count > 0 && bucket.Timestamps.Peek() < cutoff)
+                bucket.Timestamps.Dequeue();
+            bucket.Timestamps.Enqueue(now);
+            return bucket.Timestamps.Count;
         }
     }
 
@@ -57,5 +54,29 @@ internal sealed class SlidingWindowCounter
             lock (_sync)
                 return _buckets.Count;
         }
+    }
+
+    private void PruneExpired(DateTimeOffset cutoff)
+    {
+        foreach (var (clientId, bucket) in _buckets.ToArray())
+        {
+            while (bucket.Timestamps.Count > 0 && bucket.Timestamps.Peek() < cutoff)
+                bucket.Timestamps.Dequeue();
+            if (bucket.Timestamps.Count == 0)
+                Remove(clientId);
+        }
+    }
+
+    private void Remove(string clientId)
+    {
+        var bucket = _buckets[clientId];
+        _recency.Remove(bucket.RecencyNode);
+        _buckets.Remove(clientId);
+    }
+
+    private sealed class ClientBucket(LinkedListNode<string> recencyNode)
+    {
+        public LinkedListNode<string> RecencyNode { get; } = recencyNode;
+        public Queue<DateTimeOffset> Timestamps { get; } = new();
     }
 }

@@ -7,7 +7,7 @@ namespace Shield.Detection.Sensors;
 /// Trips when a single client accumulates too many failed authentications
 /// (401/403 responses) inside the window — the password-spraying / credential
 /// stuffing shape. Observation happens after the endpoint runs, so the
-/// lockdown applies to subsequent requests.
+/// client block applies to subsequent requests.
 /// </summary>
 public sealed class AuthBruteForceDetector(IShieldState state) : IAttackDetector
 {

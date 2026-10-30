@@ -2,13 +2,13 @@
   "Id": "authkit.shield",
   "Name": "Shield",
   "DisplayName": "Shield",
-  "Description": "Attack detection with full-traffic lockdown for HTTP and gRPC.",
+  "Description": "Attack detection with client blocking and full-traffic lockdown for HTTP and gRPC.",
   "Version": "1.0.0",
   "Author": "AuthKit Contributors",
   "License": "MIT",
   "LicenseUrl": "https://opensource.org/licenses/MIT",
-  "Homepage": "https://example.org/shield",
-  "RepositoryUrl": "https://example.org/shield.git",
+  "Homepage": "https://github.com/AuthKits/AuthKit.Server",
+  "RepositoryUrl": "https://github.com/AuthKits/AuthKit.Server",
   "Tags": [
     "security",
     "critical"

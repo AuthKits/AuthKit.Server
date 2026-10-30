@@ -29,7 +29,7 @@ public static class ShieldEndpoints
                 return denied;
 
             var snapshot = State.ShieldStatus.GetSnapshot(state, options.Value);
-            return (IResult)Results.Ok(new
+            return Results.Ok(new
             {
                 locked = snapshot.IsLocked,
                 lockedUntil = snapshot.LockedUntil,
@@ -50,7 +50,7 @@ public static class ShieldEndpoints
                 return denied;
 
             var incidents = state.GetIncidents(take ?? options.Value.MaxIncidents);
-            return (IResult)Results.Ok(incidents.Select(i => new
+            return Results.Ok(incidents.Select(i => new
             {
                 timestamp = i.Timestamp,
                 sensor = i.Sensor,

@@ -7,7 +7,7 @@ namespace Shield.Detection.Sensors;
 /// Trips when a single client collects too many 404s inside the window — the
 /// directory-enumeration / vulnerability-probing shape
 /// (<c>/.git/</c>, <c>/wp-admin/</c>, <c>/.env</c>). Observation happens after
-/// the endpoint runs, so the lockdown applies to subsequent requests.
+/// the endpoint runs, so the client block applies to subsequent requests.
 /// </summary>
 public sealed class EndpointScannerDetector(IShieldState state) : IAttackDetector
 {

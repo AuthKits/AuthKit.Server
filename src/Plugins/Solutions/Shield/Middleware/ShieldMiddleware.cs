@@ -25,9 +25,9 @@ public sealed class ShieldMiddleware(RequestDelegate next)
         IOptions<ShieldOptions> options)
     {
         var config = options.Value;
-        var clientId = ClientIdResolver.Resolve(context, config.TrustForwardedHeader);
+        var clientId = ClientIdResolver.Resolve(context, config.TrustForwardedHeader, config.TrustedProxyHops);
 
-        if (IsListed(clientId, config.AllowedIps) || IsBypassed(context, config))
+        if (IsBypassed(context, config))
         {
             await next(context);
             return;
@@ -49,6 +49,19 @@ public sealed class ShieldMiddleware(RequestDelegate next)
             return;
         }
 
+        if (IsListed(clientId, config.AllowedIps))
+        {
+            await next(context);
+            return;
+        }
+
+        if (state.IsClientBlocked(clientId, out var blockedUntil, out var clientReason))
+        {
+            state.CountBlock();
+            await BlockAsync(context, blockedUntil - DateTimeOffset.UtcNow, clientReason ?? "client blocked");
+            return;
+        }
+
         if (IsListed(clientId, config.BlockedIps))
         {
             state.CountBlock();
@@ -63,30 +76,31 @@ public sealed class ShieldMiddleware(RequestDelegate next)
             DateTimeOffset.UtcNow,
             context.Request.Headers.UserAgent.ToString(),
             context.Request.ContentLength);
-        foreach (var detector in detectors)
+        foreach (var signal in detectors.Select(detector => detector.Evaluate(request, config)))
         {
-            var signal = detector.Evaluate(request, config);
             if (signal is null)
                 continue;
 
-            await ApplySignalAsync(context, state, config, signal);
+            await ApplySignalAsync(context, state, config, clientId, signal);
             return;
         }
 
         await next(context);
 
-        // Post-response observation (e.g. 401/403 counting). The response is
-        // already sent, so only lockdowns apply — to subsequent requests.
+        // A post-response signal blocks this client on subsequent requests.
         foreach (var detector in detectors)
         {
             var signal = detector.ObserveResponse(request, context.Response.StatusCode, config);
             if (signal is null || signal.Action != ShieldAction.Lockdown)
                 continue;
 
-            state.TryEnterLockdown(
+            state.RecordOffender(
+                clientId,
                 signal.Sensor,
                 signal.Reason,
                 TimeSpan.FromSeconds(config.LockdownSeconds),
+                config.MaxTrackedClients,
+                config.MinOffendingClientsForLockdown,
                 config.MaxIncidents);
         }
     }
@@ -95,12 +109,14 @@ public sealed class ShieldMiddleware(RequestDelegate next)
         HttpContext context,
         IShieldState state,
         ShieldOptions config,
+        string clientId,
         AttackSignal signal)
     {
         var duration = TimeSpan.FromSeconds(config.LockdownSeconds);
         if (signal.Action == ShieldAction.Lockdown)
         {
-            state.TryEnterLockdown(signal.Sensor, signal.Reason, duration, config.MaxIncidents);
+            state.RecordOffender(clientId, signal.Sensor, signal.Reason, duration,
+                config.MaxTrackedClients, config.MinOffendingClientsForLockdown, config.MaxIncidents);
             state.CountBlock();
             return BlockAsync(context, duration, signal.Reason);
         }

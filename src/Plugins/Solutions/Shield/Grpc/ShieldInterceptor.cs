@@ -1,6 +1,7 @@
 using Grpc.Core;
 using Grpc.Core.Interceptors;
 using Microsoft.Extensions.Options;
+using Shield.Detection;
 using Shield.Options;
 using Shield.State;
 
@@ -25,6 +26,14 @@ public sealed class ShieldInterceptor(IShieldState state, IOptions<ShieldOptions
 
         if (state.IsLockdownActive(out _, out var reason))
             throw new RpcException(new Status(StatusCode.Unavailable, $"Traffic blocked by Shield ({reason ?? "lockdown"})."));
+
+        var config = options.Value;
+        var clientId = ClientIdResolver.Resolve(context.GetHttpContext(), config.TrustForwardedHeader, config.TrustedProxyHops);
+        if (config.AllowedIps.Contains(clientId, StringComparer.Ordinal))
+            return;
+        if (config.BlockedIps.Contains(clientId, StringComparer.Ordinal) ||
+            state.IsClientBlocked(clientId, out _, out reason))
+            throw new RpcException(new Status(StatusCode.Unavailable, $"Traffic blocked by Shield ({reason ?? "client blocked"})."));
     }
 
     public override Task<TResponse> UnaryServerHandler<TRequest, TResponse>(

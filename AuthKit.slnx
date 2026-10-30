@@ -28,5 +28,6 @@
     <Project Path="tests/Host/AuthKit.Host.Tests.csproj" />
     <Project Path="tests/Host.IntegrationTests/AuthKit.Host.IntegrationTests.csproj" />
     <Project Path="tests/Plugins/Abstractions/AuthKit.Plugins.Abstractions.Tests.csproj" />
+    <Project Path="tests/Plugins/Shield/Shield.Tests.csproj" />
   </Folder>
 </Solution>

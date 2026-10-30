@@ -19,6 +19,13 @@ public interface IShieldState
     /// </summary>
     bool TryEnterLockdown(string sensor, string reason, TimeSpan duration, int maxIncidents);
 
+    /// <summary>Checks whether one client has an active temporary block.</summary>
+    bool IsClientBlocked(string clientId, out DateTimeOffset blockedUntil, out string? reason);
+
+    /// <summary>Blocks an offending client and enters global lockdown only after enough distinct offenders.</summary>
+    void RecordOffender(string clientId, string sensor, string reason, TimeSpan duration,
+        int maxTrackedClients, int minOffendingClientsForLockdown, int maxIncidents);
+
     /// <summary>
     /// Clears an active lockdown immediately and records an incident.
     /// </summary>

@@ -1,4 +1,5 @@
 using Grpc.Core;
+using System.Threading.Channels;
 using Microsoft.Extensions.Options;
 using Shield.Options;
 using Shield.Security;
@@ -58,19 +59,19 @@ public sealed class ShieldStatusService(IShieldState state, IOptions<ShieldOptio
         // Subscribe first so nothing is missed, then replay the backlog.
         // An incident landing in between may be delivered twice; consumers
         // dedupe by timestamp + sensor + reason.
-        var pending = new TaskCompletionSource<State.ShieldIncident>(TaskCreationOptions.RunContinuationsAsynchronously);
-        using var subscription = state.SubscribeIncidents(incident => pending.TrySetResult(incident));
+        var channel = Channel.CreateUnbounded<State.ShieldIncident>(new UnboundedChannelOptions
+        {
+            SingleReader = true,
+            SingleWriter = false,
+        });
+        using var subscription = state.SubscribeIncidents(incident => channel.Writer.TryWrite(incident));
 
         var take = request.Take is > 0 ? request.Take : options.Value.MaxIncidents;
         foreach (var incident in state.GetIncidents(take).Reverse())
             await responseStream.WriteAsync(Map(incident));
 
-        while (!context.CancellationToken.IsCancellationRequested)
-        {
-            var incident = await pending.Task.WaitAsync(context.CancellationToken);
-            pending = new TaskCompletionSource<State.ShieldIncident>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await foreach (var incident in channel.Reader.ReadAllAsync(context.CancellationToken))
             await responseStream.WriteAsync(Map(incident));
-        }
     }
 
     /// <summary>

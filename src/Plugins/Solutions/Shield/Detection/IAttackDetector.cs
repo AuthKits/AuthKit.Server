@@ -18,7 +18,7 @@ public sealed record ShieldRequest(
 public enum ShieldAction
 {
     /// <summary>
-    /// Block all traffic for the configured duration.
+    /// Temporarily block the offending client; enough distinct offenders trigger global lockdown.
     /// </summary>
     Lockdown,
 
@@ -54,7 +54,7 @@ public interface IAttackDetector
 
     /// <summary>
     /// Observes the completed response (e.g. 401/403 counting). Returns a signal
-    /// when the observation trips the detector; the lockdown then applies to
+    /// when the observation trips the detector; the client block then applies to
     /// subsequent requests. Only <see cref="ShieldAction.Lockdown"/> signals are
     /// honored here — the response is already sent. Default ignores responses.
     /// </summary>

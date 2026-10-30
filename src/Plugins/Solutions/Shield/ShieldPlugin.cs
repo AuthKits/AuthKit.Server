@@ -16,8 +16,8 @@ namespace Shield;
 
 /// <summary>
 /// Critical-security plugin: detects attack traffic through ordered detector
-/// strategies and blocks all HTTP and gRPC traffic for a configurable duration
-/// once tripped. Thin composition root — services, pipeline declarations,
+/// strategies, blocks offending clients, and can block all HTTP and gRPC
+/// traffic after distributed signals. Thin composition root — services, pipeline declarations,
 /// endpoints, and health each live in their own unit.
 /// </summary>
 [PluginMetadata(
@@ -28,12 +28,12 @@ namespace Shield;
     capabilities: ["security"],
     name: "Shield",
     displayName: "Shield",
-    description: "Attack detection with full-traffic lockdown for HTTP and gRPC.",
+    description: "Attack detection with client blocking and full-traffic lockdown for HTTP and gRPC.",
     author: "AuthKit Contributors",
     license: "MIT",
     licenseUrl: "https://opensource.org/licenses/MIT",
-    homepage: "https://example.org/shield",
-    repositoryUrl: "https://example.org/shield.git"
+    homepage: "https://github.com/AuthKits/AuthKit.Server",
+    repositoryUrl: "https://github.com/AuthKits/AuthKit.Server"
 )]
 public sealed class ShieldPlugin : IAuthKitPlugin
 {
