@@ -1,5 +1,6 @@
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
@@ -31,8 +32,14 @@ public sealed class IAuthKitPluginCapabilitiesTests
     }
 
     [PluginMetadata("test.first", "1.0.0", [], null, ["auth", "storage"], description: "First test plugin")]
-    private sealed class FirstPlugin : IAuthKitPlugin;
+    private sealed class FirstPlugin : IAuthKitPlugin
+    {
+        public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) { }
+    }
 
     [PluginMetadata("test.second", "1.0.0", [], null, ["audit", "storage"], description: "Second test plugin")]
-    private sealed class SecondPlugin : IAuthKitPlugin;
+    private sealed class SecondPlugin : IAuthKitPlugin
+    {
+        public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) { }
+    }
 }

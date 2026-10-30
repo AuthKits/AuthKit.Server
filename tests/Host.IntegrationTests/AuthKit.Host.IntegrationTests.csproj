@@ -29,21 +29,23 @@
   <ItemGroup>
     <ProjectReference Include="../../src/Host/Host.csproj" />
     <ProjectReference Include="../../src/Plugins/Solutions/DevTokens/DevTokens.csproj" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="../../tools/AuthKit.ManifestGenerator/CLI/AuthKit.ManifestGenerator.CLI.csproj" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <!--
     Stages the real DevTokens plugin output into the test output directory so
     the WebApplicationFactory-hosted Program can discover and load it exactly as
-    it would in production (plugins/{PluginName}/{PluginName}.dll).
+    it would in production (plugins/{PluginName}/{PluginName}.dll + manifest.json).
   -->
   <Target Name="StageDevTokensPlugin" AfterTargets="Build">
     <ItemGroup>
-      <_DevTokensStageFiles Include="$(MSBuildProjectDirectory)/../../src/Plugins/Solutions/DevTokens/bin/$(Configuration)/net10.0/DevTokens.dll" />
+      <_DevTokensStageFiles Include="$(MSBuildProjectDirectory)/../../src/Plugins/Solutions/DevTokens/bin/$(Configuration)/net10.0/*.dll" />
       <_DevTokensStageFiles Include="$(MSBuildProjectDirectory)/../../src/Plugins/Solutions/DevTokens/bin/$(Configuration)/net10.0/DevTokens.pdb" />
     </ItemGroup>
     <Copy SourceFiles="@(_DevTokensStageFiles)"
           DestinationFolder="$(TargetDir)plugins/DevTokens/"
           SkipUnchangedFiles="true" />
+    <Exec Command="dotnet &quot;$(MSBuildProjectDirectory)/../../tools/AuthKit.ManifestGenerator/CLI/bin/$(Configuration)/net10.0/AuthKit.ManifestGenerator.CLI.dll&quot; --input &quot;$(TargetDir)plugins/DevTokens/DevTokens.dll&quot; --output &quot;$(TargetDir)plugins/DevTokens/manifest.json&quot;" />
   </Target>
 
 </Project>

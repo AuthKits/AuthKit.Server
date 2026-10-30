@@ -2,6 +2,7 @@ using System.Text.Json;
 using AuthKit.Plugins.Abstractions.Contracts;
 using AuthKit.Plugins.Abstractions.Contracts.Plugins;
 using AuthKit.Plugins.Abstractions.Models;
+using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 using IAuthKitPlugin = AuthKit.Plugins.Abstractions.Contracts.PluginContract.IAuthKitPlugin;
 
@@ -99,6 +100,8 @@ public sealed class PluginHealthResultTests
     {
         public CancellationToken ReceivedToken { get; private set; }
 
+        public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) { }
+
         public Task<IReadOnlyList<PluginHealthResult>> CheckHealthAsync(
             IServiceProvider services,
             CancellationToken cancellationToken = default)
@@ -113,7 +116,10 @@ public sealed class PluginHealthResultTests
     }
 
     [PluginMetadata("default-health", "1.0.0", [], [], [], description: "Default health test")]
-    private sealed class DefaultHealthPlugin : IAuthKitPlugin;
+    private sealed class DefaultHealthPlugin : IAuthKitPlugin
+    {
+        public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) { }
+    }
 
     private sealed class ServiceProviderStub : IServiceProvider
     {

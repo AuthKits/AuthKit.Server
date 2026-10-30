@@ -102,6 +102,27 @@ public static class PluginValidator
         {
             throw new ArgumentNullException(nameof(plugin), "Plugin instance cannot be null.");
         }
+
+        // Check if Id matches (case-insensitive, like duplicate detection).
+        if (!string.Equals(manifest.Id, plugin.Id, StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException(
+                "Manifest and plugin instance disagree on Id.");
+        }
+
+        // Check if Name matches.
+        if (!string.Equals(manifest.Name, plugin.Name, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "Manifest and plugin instance disagree on Name.");
+        }
+
+        // Check if Version matches (SemVer precedence, build metadata ignored).
+        if (manifest.Version.CompareTo(plugin.Version) != 0)
+        {
+            throw new InvalidOperationException(
+                "Manifest and plugin instance disagree on Version.");
+        }
             
         // Check if IsEnabled matches
         if (manifest.IsEnabled != plugin.IsEnabled)
@@ -117,13 +138,13 @@ public static class PluginValidator
                 "Manifest and plugin instance have inconsistent capabilities.");
         }
             
-        // Check if MinHostVersion matches
+            // Check if MinHostVersion matches
         if (manifest.MinHostVersion != plugin.MinHostVersion)
         {
             throw new InvalidOperationException(
                 "Manifest and plugin instance disagree on MinHostVersion.");
         }
-            
+
         // Check if DependsOn matches (case-insensitive comparison)
         if (manifest.DependsOn.Count != plugin.DependsOn.Count)
         {

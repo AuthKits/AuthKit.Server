@@ -16,17 +16,6 @@ namespace AuthKit.Host.Tests;
 public sealed class PluginConfigurationInvokerTests
 {
     [Fact]
-    public void LegacyPlugin_UsesLegacyOverloadOnce()
-    {
-        var plugin = new LegacyPlugin();
-        var builder = CreateBuilder();
-
-        PluginConfigurationInvoker.Configure(plugin, builder, builder.Configuration);
-
-        Assert.Equal(1, plugin.LegacyCalls);
-    }
-
-    [Fact]
     public void BuilderPlugin_ReceivesActualBuilderOnce()
     {
         var plugin = new BuilderPlugin();
@@ -36,7 +25,6 @@ public sealed class PluginConfigurationInvokerTests
 
         Assert.Same(builder.Services, plugin.Services);
         Assert.Equal(1, plugin.BuilderCalls);
-        Assert.Equal(0, plugin.LegacyCalls);
     }
 
     [Fact]
@@ -68,7 +56,6 @@ public sealed class PluginConfigurationInvokerTests
 
         Assert.Equal(1, plugin.ContextCalls);
         Assert.Equal(0, plugin.BuilderCalls);
-        Assert.Equal(0, plugin.LegacyCalls);
     }
 
     [Fact]
@@ -88,6 +75,18 @@ public sealed class PluginConfigurationInvokerTests
         Assert.NotSame(first.Context.Configuration, second.Context.Configuration);
     }
 
+    [Fact]
+    public void PluginWithoutOverload_Throws()
+    {
+        var plugin = new BarePlugin();
+        var builder = CreateBuilder();
+
+        var exception = Assert.Throws<InvalidOperationException>(() =>
+            PluginConfigurationInvoker.Configure(plugin, builder, builder.Configuration));
+
+        Assert.Contains("bare-plugin", exception.Message, StringComparison.Ordinal);
+    }
+
     private static HostApplicationBuilder CreateBuilder(params (string Key, string Value)[] values)
     {
         var builder = Microsoft.Extensions.Hosting.Host.CreateApplicationBuilder();
@@ -100,22 +99,11 @@ public sealed class PluginConfigurationInvokerTests
         return builder;
     }
 
-    [PluginMetadata("legacy-plugin", "1.0.0", [], [], [], name: "Legacy Plugin", description: "Test plugin")]
-    private sealed class LegacyPlugin : IAuthKitPlugin
-    {
-        public int LegacyCalls { get; private set; }
-
-        public void ConfigureServices(IServiceCollection services, IConfiguration configuration) => LegacyCalls++;
-    }
-
     [PluginMetadata("builder-plugin", "1.0.0", [], [], [], name: "Builder Plugin", description: "Test plugin")]
     private sealed class BuilderPlugin : IAuthKitPlugin
     {
-        public int LegacyCalls { get; private set; }
         public int BuilderCalls { get; private set; }
         public IServiceCollection? Services { get; private set; }
-
-        public void ConfigureServices(IServiceCollection services, IConfiguration configuration) => LegacyCalls++;
 
         public void ConfigureServices(IHostApplicationBuilder builder, IConfiguration configuration)
         {
@@ -141,11 +129,9 @@ public sealed class PluginConfigurationInvokerTests
     [PluginMetadata("both-plugin", "1.0.0", [], [], [], name: "Both Plugin", description: "Test plugin")]
     private sealed class ContextAndBuilderPlugin : IAuthKitPlugin
     {
-        public int LegacyCalls { get; private set; }
         public int BuilderCalls { get; private set; }
         public int ContextCalls { get; private set; }
 
-        public void ConfigureServices(IServiceCollection services, IConfiguration configuration) => LegacyCalls++;
         public void ConfigureServices(IHostApplicationBuilder builder, IConfiguration configuration) => BuilderCalls++;
         public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) => ContextCalls++;
     }
@@ -156,5 +142,10 @@ public sealed class PluginConfigurationInvokerTests
         public AuthKitPluginContext? Context { get; private set; }
 
         public void ConfigureServices(IServiceCollection services, AuthKitPluginContext context) => Context = context;
+    }
+
+    [PluginMetadata("bare-plugin", "1.0.0", [], [], [], name: "Bare Plugin", description: "Test plugin")]
+    private sealed class BarePlugin : IAuthKitPlugin
+    {
     }
 }

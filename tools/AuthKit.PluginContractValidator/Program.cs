@@ -18,7 +18,8 @@ var validator = new ContractValidator([
     new RegistrationRule(),
     new SecuritySchemesRule(),
     new MiddlewareRule(),
-    new HealthRule()
+    new HealthRule(),
+    new LifecycleRule()
 ]);
 
 var failures = 0;
