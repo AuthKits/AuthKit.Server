@@ -39,9 +39,11 @@ public sealed class PluginHealthEndpointIntegrationTests : IClassFixture<AuthKit
         Assert.Equal("Healthy", root.GetProperty("jwtKeyStore").GetString());
 
         var plugins = root.GetProperty("plugins");
-        Assert.Single(plugins.EnumerateObject());
+        Assert.Equal(2, plugins.EnumerateObject().Count());
         Assert.True(plugins.TryGetProperty("DevTokens", out var devTokens));
         Assert.True(devTokens.GetArrayLength() >= 1);
         Assert.InRange(devTokens[0].GetProperty("status").GetInt32(), 0, 2);
+        Assert.True(plugins.TryGetProperty("Shield", out var shield));
+        Assert.Equal(0, shield[0].GetProperty("status").GetInt32());
     }
 }
