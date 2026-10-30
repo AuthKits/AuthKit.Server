@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+option csharp_namespace = "Shield";
+
+package authkit.shield;
+
+// Operator surface for the Shield critical-security plugin.
+service ShieldService {
+  // Returns the current lockdown state and metrics.
+  rpc GetStatus (GetStatusRequest) returns (ShieldStatus);
+  // Returns recent incidents, newest first.
+  rpc ListIncidents (ListIncidentsRequest) returns (ListIncidentsResponse);
+  // Streams incidents live: recent backlog first, then new ones as they happen.
+  // May redeliver the boundary incident; consumers dedupe by timestamp.
+  rpc WatchIncidents (WatchIncidentsRequest) returns (stream ShieldIncident);
+  // Unlocks an active lockdown. Token travels in the x-shield-release metadata.
+  rpc ReleaseLockdown (ReleaseLockdownRequest) returns (ReleaseLockdownResponse);
+}
+
+message GetStatusRequest {
+}
+
+message ShieldStatus {
+  bool locked = 1;
+  string locked_until = 2;
+  string reason = 3;
+  int32 tracked_clients = 4;
+  int64 evaluated = 5;
+  int64 blocked = 6;
+  int64 trips = 7;
+  int64 auth_failures = 8;
+  int64 probes = 9;
+}
+
+message ListIncidentsRequest {
+  int32 take = 1;
+}
+
+message ListIncidentsResponse {
+  repeated ShieldIncident incidents = 1;
+}
+
+message ShieldIncident {
+  string timestamp = 1;
+  string sensor = 2;
+  string reason = 3;
+  string action = 4;
+}
+
+message WatchIncidentsRequest {
+  int32 take = 1;
+}
+
+message ReleaseLockdownRequest {
+  string release_token = 1;
+}
+
+message ReleaseLockdownResponse {
+  bool released = 1;
+}
